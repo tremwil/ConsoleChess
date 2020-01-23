@@ -2,19 +2,16 @@
 #include <Windows.h>
 #include "IVec2.h"
 
-#include <vector>
-#include "PieceDef.h"
-
 #define posToBoard(V) (V.y << 3) | V.x
 
 /// Class representing chess board
 class BoardState
 {
 public:
-	// The piece types for this board
-	std::vector<PieceDef> pieceTypes;
 	// The board data, with pieces stored as numbers in a 8x8 array
 	byte board[64];
+	// Ctor: init all zeros (empty board)
+	BoardState() {};
 
 	// Team (0 = black, 1 = white) at a position
 	byte TeamAt(IVec2 pos) 

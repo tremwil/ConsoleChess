@@ -3,16 +3,17 @@
 #include <vector>
 #include "PieceDef.h"
 
-enum MoveSymmetry
+enum MoveSymmetry : int
 {
 	// First 2 bits determines reflection (ex. knight) - APPLIED LAST, 
 	// Thrid 45deg. rotation (ex. queen),
 	// Fourth 90deg. rotation (ex. rook)
-	None =	   0b0000, 
-	Rotate90 = 0b0001, 
-	Rotate45 = 0b0011,
-	FlipX = 0b0100,
-	FlipY = 0b1000
+	None =		0b0000, 
+	Rotate90 =	0b0001,
+	Rotate45 =	0b0011,
+	FlipX =		0b0100,
+	FlipY =		0b1000,
+
 };
 
 // Type of PieceDef with moves generated from unit moves 
@@ -25,15 +26,16 @@ public:
 	bool canJump;
 
 	// Ctor
-	UnitMovePiece(byte id, bool value, bool canJump)
+	UnitMovePiece(byte id, byte value, bool canJump, const char* model)
 	{
 		this->id = id;
 		this->value = value;
 		this->canJump = canJump;
+		this->model = model;
 	}
 
 	// Initialize moveset data based on given unit moves with symmetry, etc.
-	void generateMoveset(std::vector<IVec2> unitMoves, MoveSymmetry sym, bool repeat)
+	void generateMoveset(std::vector<IVec2> unitMoves, int sym, bool repeat)
 	{
 		if (sym & 1) // 90 deg. rotate
 		{

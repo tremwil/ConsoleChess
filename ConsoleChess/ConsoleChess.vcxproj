@@ -157,6 +157,7 @@
   <ItemGroup>
     <ClInclude Include="ChessGame.h" />
     <ClInclude Include="BoardState.h" />
+    <ClInclude Include="console.h" />
     <ClInclude Include="IVec2.h" />
     <ClInclude Include="UnitMovePiece.h" />
     <ClInclude Include="PieceDef.h" />
