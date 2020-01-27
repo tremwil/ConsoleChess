@@ -117,7 +117,7 @@ public:
 		}
 	}
 	// Return all possible moves for a piece without asserting king safety
-	std::vector<IVec2> pseudolegalMoves(IVec2 pos, BoardState& board)
+	std::vector<IVec2> pseudolegalMoves(IVec2 pos, bool team, BoardState& board)
 	{
 
 	}

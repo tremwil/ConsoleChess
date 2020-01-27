@@ -21,5 +21,5 @@ public:
 	// Check if potential move is pseudolegal
 	bool IsValidMove(IVec2 start, IVec2 end, bool team, BoardState& board);
 	// Return all possible moves for a piece without asserting king safety
-	std::vector<IVec2> pseudolegalMoves(IVec2 pos, BoardState& board);
+	std::vector<IVec2> pseudolegalMoves(IVec2 pos, bool team, BoardState& board);
 };
