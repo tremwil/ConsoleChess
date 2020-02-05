@@ -2,24 +2,21 @@
 #include <iostream>
 #include <Windows.h>
 #include "Byte88.h"
+#include <functional>
 
 /********************************************
 * NOTE: THIS CODE WILL ONLY COMPILE ON A WINDOWS 
 * SYSTEM. VISUAL STUDIO 2019 MAY BE REQUIRED.
 *********************************************/
 
+typedef std::function<void(KEY_EVENT_RECORD)> KEY_EVENT_PROC;
+typedef std::function<void(MOUSE_EVENT_RECORD)> MOUSE_EVENT_PROC;
+typedef std::function<void(MENU_EVENT_RECORD)> MENU_EVENT_PROC;
+typedef std::function<void(FOCUS_EVENT_RECORD)> FOCUS_EVENT_PROC;
+typedef std::function<void(WINDOW_BUFFER_SIZE_RECORD)> BUFFER_EVENT_PROC;
+
 // Size of the event record buffer for a ConsoleEx object
 #define SZ_RECORD_BUFFER 128
-
-// Macro to convert RGB triplets into a 32bit integer
-#define RGB(r, g, b) ((b) << 16 | (g) << 8 | (r))
-
-// Function pointer typedefs for the event handlers.
-typedef void (*KEY_EVENT_PROC)(KEY_EVENT_RECORD evt);
-typedef void (*MOUSE_EVENT_PROC)(MOUSE_EVENT_RECORD evt);
-typedef void (*MENU_EVENT_PROC)(MENU_EVENT_RECORD evt);
-typedef void (*FOCUS_EVENT_PROC)(FOCUS_EVENT_RECORD evt);
-typedef void (*BUFFER_SIZE_PROC)(WINDOW_BUFFER_SIZE_RECORD evt);
 
 // Class implementing advanced features into the console, like events, font change, resize, etc.
 class ConsoleEx
@@ -34,11 +31,11 @@ private:
 	// Default Windows colormap
 	COLORREF cmapDefault[16];
 public:
-	KEY_EVENT_PROC onKeyEvent;		// Instance-defined key event handler
-	MOUSE_EVENT_PROC onMouseEvent;  // Instance-defined mouse event handler 
-	MENU_EVENT_PROC onMenuEvent;	// Instance-defined menu event handler
-	FOCUS_EVENT_PROC onFocusEvent;  // Instance-defined focus event handler
-	BUFFER_SIZE_PROC onBufferEvent; // Instance-defined buffer resize event handler
+	KEY_EVENT_PROC onKeyEvent; // Instance-defined key event handler
+	MOUSE_EVENT_PROC onMouseEvent; // Instance-defined mouse event handler 
+	MENU_EVENT_PROC onMenuEvent; // Instance-defined menu event handler
+	FOCUS_EVENT_PROC onFocusEvent;	// Instance-defined focus event handler
+	BUFFER_EVENT_PROC onBufferEvent; // Instance-defined buffer resize event handler
 	COLORREF colormap[16];
 
 	// Default CTOR
@@ -52,21 +49,27 @@ public:
 		onFocusEvent = NULL;
 		onBufferEvent = NULL;
 
-		SetConsoleMode(hConsoleIn, ENABLE_MOUSE_INPUT | ENABLE_WINDOW_INPUT);
 		CONSOLE_SCREEN_BUFFER_INFOEX cBuffInfo = CONSOLE_SCREEN_BUFFER_INFOEX();
-		BOOL result = GetConsoleScreenBufferInfoEx(hConsoleOut, &cBuffInfo);
+		cBuffInfo.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX);
+		GetConsoleScreenBufferInfoEx(hConsoleOut, &cBuffInfo);
 		// Copy default colormap into cmapDefault and colormap
 		memcpy_s(cmapDefault, sizeof(cmapDefault), cBuffInfo.ColorTable, sizeof(cmapDefault));
 		memcpy_s(colormap, sizeof(colormap), cmapDefault, sizeof(colormap));
 	}
 
 	// Set console size in character rows and columns.
-	BOOL setConsoleSize(int row, int col)
+	void setConsoleBufferSize(int row, int col)
 	{
 		COORD c;
 		c.X = col;
 		c.Y = row;
-		return SetConsoleScreenBufferSize(hConsoleOut, c);
+		SetConsoleScreenBufferSize(hConsoleOut, c);
+		SMALL_RECT rect = SMALL_RECT();
+		rect.Top = 0;
+		rect.Left = 0;
+		rect.Right = col;
+		rect.Bottom = row;
+		SetConsoleWindowInfo(hConsoleOut, true, &rect);
 	};
 
 	// Call every iteration of a main loop to trigger instance-defined event handlers
@@ -105,7 +108,8 @@ public:
 	void applyColormap()
 	{
 		CONSOLE_SCREEN_BUFFER_INFOEX cBuffInfo = CONSOLE_SCREEN_BUFFER_INFOEX();
-		GetConsoleScreenBufferInfoEx(hConsoleOut, &cBuffInfo);
+		cBuffInfo.cbSize = sizeof(CONSOLE_SCREEN_BUFFER_INFOEX);
+		GetConsoleScreenBufferInfoEx(GetStdHandle(STD_OUTPUT_HANDLE), &cBuffInfo);
 		// Replace console colormap with ours
 		memcpy_s(cBuffInfo.ColorTable, sizeof(cBuffInfo.ColorTable), colormap, sizeof(colormap));
 		SetConsoleScreenBufferInfoEx(hConsoleOut, &cBuffInfo);
@@ -156,11 +160,12 @@ public:
 	// Set font to enable square space characters to draw pixel art. 
 	void initSpriteMode(int pxW, int pxH)
 	{
+		SetConsoleMode(hConsoleIn, ENABLE_EXTENDED_FLAGS | ~ENABLE_QUICK_EDIT_MODE);
 		setFont(L"Courrier New", pxW, pxH);
 	}
 
 	// Draw character sprite constitued of (BG, FG) colormap pairs in a 8x8 byte array.
-	void drawSprite(Byte88 sprite, int row, int col)
+	void drawSprite(const Byte88 &sprite, int row, int col)
 	{
 		for (int i = 0; i < 64; i++)
 		{
@@ -172,7 +177,7 @@ public:
 
 	// Draw character sprite constitued of (BG, FG) colormap pairs in a 8x8 byte array,
 	// considering values of 0 to be transparent. 
-	void drawSpriteAlpha(Byte88 sprite, int row, int col)
+	void drawSpriteAlpha(const Byte88 &sprite, int row, int col)
 	{
 		for (int i = 0; i < 64; i++)
 		{

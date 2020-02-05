@@ -137,5 +137,10 @@ struct IVec2
 	{
 		return a.x == x && a.y == y;
 	}
+
+	bool operator!= (const IVec2& a)
+	{
+		return a.x != x || a.y != y;
+	}
 #pragma endregion
 };

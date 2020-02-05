@@ -26,10 +26,10 @@ public:
 	bool canJump;
 
 	// Ctor
-	UnitMovePiece(byte id, byte value, bool canJump, Byte88 sprite)
+	UnitMovePiece(byte id, bool critical, bool canJump, Byte88 sprite)
 	{
 		this->id = id;
-		this->value = value;
+		this->critical = critical;
 		this->canJump = canJump;
 		this->sprite = Byte88(sprite);
 	}
@@ -83,16 +83,15 @@ public:
 				// Update moveset index and increment delta
 				j = jc;
 				delta += mv;
-			} while (repeat&& abs(delta.x) < 8 && abs(delta.y) < 8);
+			} while (repeat && abs(delta.x) < 8 && abs(delta.y) < 8);
 		}
 	}
 
 	// Check if potential move is pseudolegal
-	bool IsValidMove(IVec2 start, IVec2 end, bool team, BoardState& board)
+	bool isValidMove(IVec2 start, IVec2 end, BoardState& board)
 	{
 		// Check for team of piece at the end 
-		bool teamEnd = board.TeamAt(end);
-		if (teamEnd == team) { return false; }
+		if (board.getPiece(end).team == board.getPiece(start).team) { return false; }
 		// Find displacement of piece
 		IVec2 delta = end - start;
 		// Get index in moveset array
@@ -110,16 +109,11 @@ public:
 				i = moveset[i]; // Get previous position in move path
 				IVec2 d = IVec2((i >> 4) - 8, (i & 0xF) - 8); // Calculate equiv. delta
 				// Check if piece lies in the intermediate square
-				if (board.PieceAt(start + d) != 0) { return false; }
+				if (board[start + d] != 0) { return false; }
 			}
 			// Path was not blocked by another piece, move is valid
 			return true;
 		}
-	}
-	// Return all possible moves for a piece without asserting king safety
-	std::vector<IVec2> pseudolegalMoves(IVec2 pos, bool team, BoardState& board)
-	{
-
 	}
 };
 

@@ -16,6 +16,9 @@
     <Filter Include="Header Files\Bitboard">
       <UniqueIdentifier>{55c0560d-95f5-40b7-b906-5e2151d4f511}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Header Files\Engine">
+      <UniqueIdentifier>{98bc1008-bc64-48f5-999e-6a7d6e402002}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ConsoleChess.cpp">
@@ -23,21 +26,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="BoardState.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ChessGame.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="IVec2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UnitMovePiece.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PieceDef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Board.h">
       <Filter>Header Files\Bitboard</Filter>
     </ClInclude>
@@ -50,11 +38,26 @@
     <ClInclude Include="bitboard.h">
       <Filter>Header Files\Bitboard</Filter>
     </ClInclude>
-    <ClInclude Include="ConsoleEx.h">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="BoardState.h">
+      <Filter>Header Files\Engine</Filter>
     </ClInclude>
     <ClInclude Include="Byte88.h">
-      <Filter>Header Files</Filter>
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="ChessGame.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="ConsoleEx.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="IVec2.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="PieceDef.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="UnitMovePiece.h">
+      <Filter>Header Files\Engine</Filter>
     </ClInclude>
     <ClInclude Include="SpriteDefs.h">
       <Filter>Header Files</Filter>

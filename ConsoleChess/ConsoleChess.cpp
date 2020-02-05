@@ -15,23 +15,22 @@ int main()
 	system("pause");
 
 	// Pawn definition
-	UnitMovePiece pawn = UnitMovePiece(1, 1, false, PawnSprite);
+	UnitMovePiece pawn = UnitMovePiece(1, false, false, PawnSprite);
 	// Bishop definition
-	UnitMovePiece bishop = UnitMovePiece(2, 1, false, BishopSprite);
+	UnitMovePiece bishop = UnitMovePiece(2, false, false, BishopSprite);
 	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 1)}, MoveSymmetry::Rotate90, true);
 	// Knight definition
-	UnitMovePiece knight = UnitMovePiece(3, 1, true, KnightSprite);
+	UnitMovePiece knight = UnitMovePiece(3, false, true, KnightSprite);
 	bishop.generateMoveset(std::vector<IVec2> {IVec2(2, 1)}, MoveSymmetry::Rotate90 | MoveSymmetry::FlipY, false);
 	// Rook definition
-	UnitMovePiece rook = UnitMovePiece(4, 1, false, RookSprite);
+	UnitMovePiece rook = UnitMovePiece(4, false, false, RookSprite);
 	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate90, true);
 	// Queen definition
-	UnitMovePiece queen = UnitMovePiece(5, 1, false, QueenSprite);
+	UnitMovePiece queen = UnitMovePiece(5, false, false, QueenSprite);
 	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate45, true);
 	// King definition
-	UnitMovePiece king = UnitMovePiece(6, 0, false, KingSprite);
+	UnitMovePiece king = UnitMovePiece(6, true, false, KingSprite);
 	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate45, false);
-
 
 	std::vector<PieceDef> pieces
 	{
@@ -43,7 +42,7 @@ int main()
 		king
 	};
 
-	Byte88 board = Byte88(new byte[64]
+	BoardState board = BoardState(new byte[64]
 	{
 		0x04, 0x03, 0x02, 0x05, 0x06, 0x02, 0x03, 0x04,
 		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
@@ -51,10 +50,12 @@ int main()
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
+		0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81,
 		0x84, 0x83, 0x82, 0x85, 0x86, 0x82, 0x83, 0x84
 	});
 
 	ChessGame game = ChessGame(pieces, board);
-	game.UpdateAll();
+	game.drawAllBoard();
+
+	game.mainloop();
 }

@@ -47,14 +47,14 @@ struct Byte88
 		return *this;						
 	}	
 	
-	Byte88 operator+ (Byte88 & b) 
+	Byte88 operator+ (Byte88 & b) const
 	{			
 		Byte88 cpy = Byte88(*this);
 		cpy += b;
 		return cpy;
 	}
 
-	Byte88 operator-()
+	Byte88 operator-() const
 	{
 		Byte88 cpy = Byte88(*this);
 		for (int i = 0; i < 64; i++)
@@ -73,7 +73,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator- (Byte88& b)
+	Byte88 operator- (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy -= b;
@@ -89,7 +89,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator* (Byte88& b)
+	Byte88 operator* (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy *= b;
@@ -105,7 +105,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator/ (Byte88& b)
+	Byte88 operator/ (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy /= b;
@@ -121,7 +121,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator| (Byte88& b)
+	Byte88 operator| (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy |= b;
@@ -137,7 +137,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator| (byte b)
+	Byte88 operator| (byte b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy |= b;
@@ -153,7 +153,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator& (Byte88& b)
+	Byte88 operator& (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy &= b;
@@ -169,7 +169,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator& (byte b)
+	Byte88 operator& (byte b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy &= b;
@@ -185,7 +185,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator^ (Byte88& b)
+	Byte88 operator^ (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy ^= b;
@@ -201,7 +201,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator^ (byte b)
+	Byte88 operator^ (byte b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy ^= b;
@@ -217,7 +217,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator>> (Byte88& b)
+	Byte88 operator>> (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy >>= b;
@@ -233,7 +233,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator>> (byte b)
+	Byte88 operator>> (byte b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy >>= b;
@@ -249,7 +249,7 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator<< (Byte88& b)
+	Byte88 operator<< (Byte88& b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy <<= b;
@@ -265,14 +265,14 @@ struct Byte88
 		return *this;
 	}
 
-	Byte88 operator<< (byte b)
+	Byte88 operator<< (byte b) const
 	{
 		Byte88 cpy = Byte88(*this);
 		cpy <<= b;
 		return cpy;
 	}
 
-	Byte88 operator~()
+	Byte88 operator~() const
 	{
 		Byte88 cpy = Byte88(*this);
 		for (int i = 0; i < 64; i++)
@@ -288,6 +288,16 @@ struct Byte88
 	}
 
 	byte& operator[](IVec2 pos)
+	{
+		return data[pos.y << 3 | pos.x];
+	}
+
+	byte operator[](int index) const
+	{
+		return data[index];
+	}
+
+	byte operator[](IVec2 pos) const
 	{
 		return data[pos.y << 3 | pos.x];
 	}

@@ -1,55 +1,82 @@
 #pragma once
 #include <Windows.h>
 #include "IVec2.h"
+#include "Byte88.h"
 
-#define posToBoard(V) (V.y << 3) | V.x
+#define PIECE_TEAM  0b00010000
+#define PIECE_MOVED 0b00100000
 
-/// Class representing chess board
-class BoardState
+struct Piece
 {
-public:
-	// The board data, with pieces stored as numbers in a 8x8 array
-	byte board[64];
-	// Ctor: init all zeros (empty board)
-	BoardState() : board{} {};
+	byte id : 4;		// Piece ID (1-15)
+	byte team : 1;		// Piece team (black/white)
+	byte moved : 1;		// if piece moved since start
+	byte special : 2;	// special bits reserved for the piece
 
-	// Team (0 = black, 1 = white) at a position
-	byte TeamAt(IVec2 pos) 
+	Piece(byte b)
 	{
-		return board[posToBoard(pos)] >> 7;
-	}
-	// Piece (0 = no piece, other = piece ID) at a position
-	byte PieceAt(IVec2 pos)
-	{
-		return board[posToBoard(pos)] & 0x7F;
-	}
-	// Full data at position (byte where 7 LSB = ID and MSB = team)
-	byte DataAt(IVec2 pos)
-	{
-		return board[posToBoard(pos)];
-	}
-	// Set Team (0 = black, 1 = white) at a position
-	byte SetTeamAt(IVec2 pos, byte team)
-	{
-		board[posToBoard(pos)] &= (team << 8) | 0x7F;
-	}
-	// Set Piece (0 = no piece, other = piece ID) at a position
-	byte SetPieceAt(IVec2 pos, byte piece)
-	{
-		board[posToBoard(pos)] &= piece | 0x80;
-	}
-	// Set Full data at position (byte where 7 LSB = ID and MSB = team)
-	byte SetDataAt(IVec2 pos, byte data)
-	{
-		board[posToBoard(pos)] = data;
+		id = b & 0xf; b >>= 4;
+		team = b & 1; b >>= 1;
+		moved = b & 1; b >>= 1;
+		special = b;
 	}
 
-	// Move piece from a position to another
-	void Move(IVec2 start, IVec2 end)
+	byte getByte()
 	{
-		int idx = posToBoard(start);
-		byte data = board[idx];
-		board[idx] = 0;
-		board[posToBoard(end)] = data;
+		return special << 6 | moved << 5 | team << 4 | id;
+	}
+};
+
+/// Byte88 extension to represent chess board
+struct BoardState : Byte88
+{
+	// Create empty byte8x8.
+	BoardState() : Byte88() {};
+
+	// Create copy of byte8x8.
+	BoardState(const BoardState& b)
+	{
+		memcpy_s(data, 64, b.data, 64);
+	}
+
+	BoardState(byte b)
+	{
+		std::fill_n(data, 64, b);
+	}
+
+	// Create a BoardState from a bit board with custom LOW and HIGH bytes. 
+	BoardState(UINT64 bboard, byte low, byte high) : Byte88()
+	{
+		for (int i = 0; i < 64; i++)
+		{
+			data[i] = (bboard & 1) ? high : low;
+			bboard >>= 1;
+		}
+	}
+
+	// Create a byte8x8 from a pointer. Unsafe.
+	BoardState(byte* ptr)
+	{
+		memcpy_s(data, 64, ptr, 64);
+	}
+
+	Piece getPiece(int pos)
+	{
+		return Piece(data[pos]);
+	}
+
+	Piece getPiece(IVec2 pos)
+	{
+		return Piece(data[pos.y << 3 | pos.x]);
+	}
+
+	void setPiece(int pos, Piece p)
+	{
+		data[pos] = p.getByte();
+	}
+
+	void setPiece(IVec2 pos, Piece p)
+	{
+		data[pos.y << 3 | pos.x] = p.getByte();
 	}
 };
