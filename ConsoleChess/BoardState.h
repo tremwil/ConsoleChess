@@ -11,7 +11,7 @@ public:
 	// The board data, with pieces stored as numbers in a 8x8 array
 	byte board[64];
 	// Ctor: init all zeros (empty board)
-	BoardState() {};
+	BoardState() : board{} {};
 
 	// Team (0 = black, 1 = white) at a position
 	byte TeamAt(IVec2 pos) 

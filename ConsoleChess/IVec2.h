@@ -132,5 +132,10 @@ struct IVec2
 		y %= a.y;
 		return *this;
 	}
+
+	bool operator== (const IVec2& a)
+	{
+		return a.x == x && a.y == y;
+	}
 #pragma endregion
 };

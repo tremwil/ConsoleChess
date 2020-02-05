@@ -1,79 +1,102 @@
 #pragma once
 
 #include <iostream>
+#include <Windows.h>
 #include <map>
+#include <vector>
 
+#include "ConsoleEx.h"
 #include "PieceDef.h"
 #include "BoardState.h"
 
+typedef enum 
+{
+	FullBlack		= 0x0,
+	WhiteFill		= 0x1,
+	WhiteOutline	= 0x2,
+	BlackFill		= 0x3,
+	BlackOutline	= 0x4,
+	SquareWhite		= 0x5,
+	SquareBlack		= 0x6,
+	SquareInCheck	= 0x7,
+	SquareSelected	= 0x8,
+	SquarePossMove	= 0x9,
+	TextFg			= 0xA,
+	TextBg			= 0xB
+} ChessColor;
+
 class ChessGame
 {
+private:
+	ConsoleEx consoleEx;
+
+	IVec2 selectedSquare;
+	Byte88 possibleMoves;
+
+	Byte88 sqrHighlightSprite;
+
+	void init(std::vector<PieceDef> pieces)
+	{
+		pieceDefs = std::vector<PieceDef>{ PieceDef() };
+		pieceDefs.insert(pieceDefs.end(), pieces.begin(), pieces.end());
+		for (int i = 1; i < pieceDefs.size(); i++)
+		{
+			pieceDefs[i].id = i;
+		}
+
+		consoleEx = ConsoleEx();
+		consoleEx.initSpriteMode(14, 13);
+		consoleEx.setConsoleSize(15 * 8, 17 * 8);
+
+		consoleEx.colormap[FullBlack] = 0x000000;
+		consoleEx.colormap[WhiteFill] = 0xe8f1ff;
+		consoleEx.colormap[WhiteOutline] = 0xc7c3c2;
+		consoleEx.colormap[BlackFill] = 0x9c7683;
+		consoleEx.colormap[BlackOutline] = 0x532b1d;
+		consoleEx.colormap[SquareWhite] = 0xffccaa;
+		consoleEx.colormap[SquareBlack] = 0xab5632;
+		consoleEx.colormap[SquareInCheck] = 0x0335fc;
+		consoleEx.colormap[SquareSelected] = 0x90f5b7;
+		consoleEx.colormap[SquarePossMove] = 0x00d138;
+		consoleEx.colormap[TextBg] = 0x404040;
+		consoleEx.colormap[TextFg] = 0xd0d0d0;
+		consoleEx.applyColormap();
+	}
 public:
 	
-	std::map<byte, PieceDef> pieceDefs;
-	BoardState boardState;
+	std::vector<PieceDef> pieceDefs;
+	Byte88 boardState;
 
 	/// Class constructor (default)
-	ChessGame(std::map<byte, PieceDef> pieces) : pieceDefs(pieces), boardState() {};
-	//// Constructor (w/state)
-	ChessGame(std::map<byte, PieceDef> pieces, BoardState bstate) : pieceDefs(pieces), boardState(bstate) {};
-	
-	void DrawGrid()
+	ChessGame(std::vector<PieceDef> pieces) : boardState(), possibleMoves(), selectedSquare(-1, -1)
 	{
-		// Get console STD Handle
-		HANDLE hCons = GetStdHandle(STD_OUTPUT_HANDLE);
-		// Prepare COORD structure 
-		COORD curPos;
-		curPos.X = 0;
-		curPos.Y = 0;
-
-		for (int i = 0; i < 32; i++)
-		{
-			curPos.Y = i;
-			SetConsoleCursorPosition(hCons, curPos);
-			for (int j = 0; j < 8; j++)
-			{
-				// Check parity to figure out color
-				SetConsoleTextAttribute(hCons, ((i/4 & 1) == (j & 1)) ? 0x7F : 0x8F);
-				std::cout << "       ";
-			}
-			
-		}
-	}
-
+		init(pieces);
+	};
+	//// Constructor (w/state)
+	ChessGame(std::vector<PieceDef> pieces, Byte88 bstate) : boardState(bstate), possibleMoves(), selectedSquare(-1,-1)
+	{
+		init(pieces);
+	};
+	
 	void UpdateSquare(IVec2 pos)
 	{
-		// Get console STD Handle
-		HANDLE hCons = GetStdHandle(STD_OUTPUT_HANDLE);
-		// Prepare COORD structure 
-		COORD curPos;
-		curPos.X = 7 * pos.x + 2;
-		curPos.Y = 4 * pos.y + 1;
-
-		if (!boardState.PieceAt(pos))
+		int piece = boardState[pos];
+		// Draw square
+		bool isWhiteSqr = (pos.x & 1) == (pos.y & 1);
+		Byte88 sqrSprite = Byte88((isWhiteSqr ? SquareWhite : SquareBlack) << 4);
+		consoleEx.drawSprite(sqrSprite, 8 * pos.y, 8 * pos.x);
+		// Draw board marks 
+		if (possibleMoves[pos] || pos == selectedSquare) 
 		{
-			SetConsoleTextAttribute(hCons, ((pos.x & 1) == (pos.y & 1)) ? 0x7F : 0x8F);
-
-			SetConsoleCursorPosition(hCons, curPos);
-			std::cout << "   ";
-			curPos.Y++;
-			SetConsoleCursorPosition(hCons, curPos);
-			std::cout << "   ";
+			sqrSprite = Byte88((possibleMoves[pos] ? SquarePossMove : SquareSelected) << 4);
+			consoleEx.drawSpriteAlpha(sqrSprite, 8 * pos.y, 8 * pos.x);
 		}
-		else
+		// Draw piece
+		if (piece != 0)
 		{
-			byte idx = boardState.PieceAt(pos);
-			bool team = boardState.TeamAt(pos);
-
-			PieceDef piece = this->pieceDefs.at(idx);
-
-			SetConsoleTextAttribute(hCons, team ? 0xF0 : 0x0F);
-
-			SetConsoleCursorPosition(hCons, curPos);
-			std::cout << piece.model[0] << piece.model[1] << piece.model[2];
-			curPos.Y++;
-			SetConsoleCursorPosition(hCons, curPos);
-			std::cout << piece.model[3] << piece.model[4] << piece.model[5];
+			Byte88 sprite = Byte88(pieceDefs[piece & 0x7f].sprite);
+			if (piece & 0x80) { sprite = (sprite >> 4) & 0xf0; }
+			consoleEx.drawSpriteAlpha(sqrSprite, 8 * pos.y, 8 * pos.x);
 		}
 	}
 
@@ -87,7 +110,5 @@ public:
 			}
 		}
 	}
-private:
-
 };
 

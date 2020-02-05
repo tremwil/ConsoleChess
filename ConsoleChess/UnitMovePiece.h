@@ -26,12 +26,12 @@ public:
 	bool canJump;
 
 	// Ctor
-	UnitMovePiece(byte id, byte value, bool canJump, const char* model)
+	UnitMovePiece(byte id, byte value, bool canJump, Byte88 sprite)
 	{
 		this->id = id;
 		this->value = value;
 		this->canJump = canJump;
-		this->model = model;
+		this->sprite = Byte88(sprite);
 	}
 
 	// Initialize moveset data based on given unit moves with symmetry, etc.
