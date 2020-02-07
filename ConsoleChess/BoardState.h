@@ -6,6 +6,8 @@
 #define PIECE_ID      0b00001111
 #define PIECE_TEAM    0b00010000
 #define PIECE_MOVED   0b00100000
+#define PIECE_SP1     0b01000000
+#define PIECE_SP2	  0b10000000
 #define PIECE_SPECIAL 0b11000000
 
 struct Piece

@@ -180,6 +180,7 @@ public:
 			SetConsoleTextAttribute(hConsoleOut, sprite[i]);
 			printf(" ");
 		}
+		setCursorPosition(63, 64);
 	}
 
 	// Draw character sprite constitued of (BG, FG) colormap pairs in a 8x8 byte array,
