@@ -23,15 +23,15 @@ public:
 	PieceDef(byte id, bool critical, Byte88 sprite) : id(id), critical(critical), sprite(sprite) {};
 
 	// Check if potential move is pseudolegal, implemented by specific piece class
-	bool isValidMove(IVec2 start, IVec2 end, BoardState& board)
+	virtual bool isValidMove(IVec2 start, IVec2 end, BoardState& board)
 	{
 		return false;
 	}
 
 	// Make move for simple pieces, overwrite if necessary (ex. en passant and castle)
-	void makeMove(IVec2 start, IVec2 end, BoardState& board)
+	virtual void makeMove(IVec2 start, IVec2 end, BoardState& board)
 	{
-		board[end] = board[start] & (~PIECE_MOVED); // Clear piece moved flag
+		board[end] = board[start] | PIECE_MOVED; // Set piece moved flag
 		board[start] = 0;
 	}
 };

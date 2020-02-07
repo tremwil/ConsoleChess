@@ -35,6 +35,12 @@ struct IVec2
 		return x % v.x == 0 && y % v.y == 0;
 	}
 
+	// True if this Vec2 represents a position on a chess board 
+	bool isChessPos()
+	{
+		return 0 <= x && x < 8 && 0 <= y && y < 8;
+	}
+
 #pragma region Operators
 
 	IVec2& operator=(const IVec2& a)

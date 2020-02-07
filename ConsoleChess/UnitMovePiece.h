@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <vector>
 #include "PieceDef.h"
+#include <algorithm>
 
 enum MoveSymmetry : int
 {
@@ -26,7 +27,7 @@ public:
 	bool canJump;
 
 	// Ctor
-	UnitMovePiece(byte id, bool critical, bool canJump, Byte88 sprite)
+	UnitMovePiece(byte id, bool critical, bool canJump, Byte88 sprite) : moveset{ }
 	{
 		this->id = id;
 		this->critical = critical;
@@ -58,17 +59,18 @@ public:
 				}
 			}
 		}
-		if (sym >> 2) // Reflect
+		if (sym & 12) // Reflect
 		{
 			int csz = unitMoves.size();
 			for (int i = 0; i < csz; i++)
 			{
 				IVec2 mv = unitMoves[i]; // Orig. move
 				if (sym & 4) { unitMoves.push_back(IVec2(-mv.x, mv.y)); } // X Flip
-				if (sym & 8) { unitMoves.push_back(IVec2(mv.y, -mv.y)); } // Y Flip
+				if (sym & 8) { unitMoves.push_back(IVec2(mv.x, -mv.y)); } // Y Flip
 			}
 		}
 		// Fill moveset data from generated unit moves
+		std::fill_n(moveset, sizeof(moveset), 0);
 		for (int i = 0; i < unitMoves.size(); i++) 
 		{
 			IVec2 mv = unitMoves[i]; // Current unit move
@@ -78,7 +80,7 @@ public:
 			do 	// While move is in range of the board, repeat it
 			{
 				// Calculate current moveset index and set to previous
-				int jc = (delta.x + 8) << 4 | (delta.y + 8);
+				int jc = (delta.y + 8) << 4 | (delta.x + 8);
 				moveset[jc] = j;
 				// Update moveset index and increment delta
 				j = jc;
@@ -88,26 +90,26 @@ public:
 	}
 
 	// Check if potential move is pseudolegal
-	bool isValidMove(IVec2 start, IVec2 end, BoardState& board)
+	bool isValidMove(IVec2 start, IVec2 end, BoardState& board) override
 	{
 		// Check for team of piece at the end 
-		if (board.getPiece(end).team == board.getPiece(start).team) { return false; }
+		if (board[end] != 0 && board.getPiece(end).team == board.getPiece(start).team) { return false; }
 		// Find displacement of piece
 		IVec2 delta = end - start;
 		// Get index in moveset array
-		int i = (delta.x + 8) << 4 | (delta.y + 8);
+		int i = (delta.y + 8) << 4 | (delta.x + 8);
 		// Location not in moveset or onto our piece
 		if (moveset[i] == 0) { return false; }
 		// Location in moveset and can jump over pieces
 		else if (canJump) { return true; }
 		// Check for possible obstruction
-		else 
+		else
 		{
 			// Jump to previous positions on the move path until the 0 delta
-			while (moveset[i] != 0x88) 
-			{ 
+			while (moveset[i] != 0x88)
+			{
 				i = moveset[i]; // Get previous position in move path
-				IVec2 d = IVec2((i >> 4) - 8, (i & 0xF) - 8); // Calculate equiv. delta
+				IVec2 d = IVec2((i & 0xF) - 8, (i >> 4) - 8); // Calculate equiv. delta
 				// Check if piece lies in the intermediate square
 				if (board[start + d] != 0) { return false; }
 			}

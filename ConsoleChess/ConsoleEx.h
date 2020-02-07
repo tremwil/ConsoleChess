@@ -1,4 +1,6 @@
 #pragma once
+#define _WIN32_WINNT 0x0500
+
 #include <iostream>
 #include <Windows.h>
 #include "Byte88.h"
@@ -60,16 +62,17 @@ public:
 	// Set console size in character rows and columns.
 	void setConsoleBufferSize(int row, int col)
 	{
-		COORD c;
-		c.X = col;
-		c.Y = row;
-		SetConsoleScreenBufferSize(hConsoleOut, c);
 		SMALL_RECT rect = SMALL_RECT();
 		rect.Top = 0;
 		rect.Left = 0;
 		rect.Right = col;
 		rect.Bottom = row;
 		SetConsoleWindowInfo(hConsoleOut, true, &rect);
+
+		COORD c;
+		c.X = col;
+		c.Y = row;
+		SetConsoleScreenBufferSize(hConsoleOut, c);
 	};
 
 	// Call every iteration of a main loop to trigger instance-defined event handlers
@@ -162,6 +165,10 @@ public:
 	{
 		SetConsoleMode(hConsoleIn, ENABLE_EXTENDED_FLAGS | ~ENABLE_QUICK_EDIT_MODE);
 		setFont(L"Courrier New", pxW, pxH);
+
+		// Block console window resizing
+		HWND hWindow = GetConsoleWindow();
+		SetWindowLong(hWindow, GWL_STYLE, GetWindowLong(hWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
 	}
 
 	// Draw character sprite constitued of (BG, FG) colormap pairs in a 8x8 byte array.

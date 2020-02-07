@@ -12,8 +12,6 @@
 
 int main()
 {
-	system("pause");
-
 	// Pawn definition
 	UnitMovePiece pawn = UnitMovePiece(1, false, false, PawnSprite);
 	// Bishop definition
@@ -21,25 +19,25 @@ int main()
 	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 1)}, MoveSymmetry::Rotate90, true);
 	// Knight definition
 	UnitMovePiece knight = UnitMovePiece(3, false, true, KnightSprite);
-	bishop.generateMoveset(std::vector<IVec2> {IVec2(2, 1)}, MoveSymmetry::Rotate90 | MoveSymmetry::FlipY, false);
+	knight.generateMoveset(std::vector<IVec2> {IVec2(2, 1)}, MoveSymmetry::Rotate90 | MoveSymmetry::FlipY, false);
 	// Rook definition
 	UnitMovePiece rook = UnitMovePiece(4, false, false, RookSprite);
-	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate90, true);
+	rook.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate90, true);
 	// Queen definition
 	UnitMovePiece queen = UnitMovePiece(5, false, false, QueenSprite);
-	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate45, true);
+	queen.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate45, true);
 	// King definition
 	UnitMovePiece king = UnitMovePiece(6, true, false, KingSprite);
-	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate45, false);
+	king.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, MoveSymmetry::Rotate45, false);
 
-	std::vector<PieceDef> pieces
+	std::vector<PieceDef*> pieces
 	{
-		pawn,
-		bishop,
-		knight,
-		rook,
-		queen,
-		king
+		&pawn,
+		&bishop,
+		&knight,
+		&rook,
+		&queen,
+		&king
 	};
 
 	BoardState board = BoardState(new byte[64]
@@ -50,12 +48,11 @@ int main()
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-		0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81,
-		0x84, 0x83, 0x82, 0x85, 0x86, 0x82, 0x83, 0x84
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		//0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
+		0x14, 0x13, 0x12, 0x15, 0x16, 0x12, 0x13, 0x14
 	});
 
 	ChessGame game = ChessGame(pieces, board);
-	game.drawAllBoard();
-
 	game.mainloop();
 }

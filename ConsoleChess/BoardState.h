@@ -3,8 +3,10 @@
 #include "IVec2.h"
 #include "Byte88.h"
 
-#define PIECE_TEAM  0b00010000
-#define PIECE_MOVED 0b00100000
+#define PIECE_ID      0b00001111
+#define PIECE_TEAM    0b00010000
+#define PIECE_MOVED   0b00100000
+#define PIECE_SPECIAL 0b11000000
 
 struct Piece
 {
