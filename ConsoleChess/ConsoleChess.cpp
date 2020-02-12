@@ -13,48 +13,48 @@
 #include "Pawn.h"
 #include "King.h"
 
-GameWindow cEx;
-bool mouseDown;
-UINT64 bb;
-
-static const char* hex = "0123456789ABCDEF";
-
-void onMouse(MOUSE_EVENT_RECORD evt)
-{
-	IVec2 mP = IVec2(evt.dwMousePosition.X / 8, evt.dwMousePosition.Y / 8);
-	int shift = POS_TO_INDEX(mP);
-	if (!mouseDown && (evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN) && shift >= 0 && mP.isChessPos())
-	{
-		mouseDown = true;
-
-		bb ^= 1ULL << shift;
-		cEx.drawSprite((bb & 1ULL << shift) ? 0xff : 0x00, 8*mP.y, 8*mP.x);
-
-		char str[19] { '0', 'x' };
-		str[18] = 0;
-		UINT64 c = bb;
-		for (int i = 15; i >= 0; i--)
-		{
-			str[i + 2] = hex[c & 0xf];
-			c >>= 4;
-		}
-
-		//put your text in source
-		if (OpenClipboard(NULL))
-		{
-			HGLOBAL clipbuffer;
-			char* buffer;
-			EmptyClipboard();
-			clipbuffer = GlobalAlloc(GMEM_DDESHARE, 19);
-			buffer = (char*)GlobalLock(clipbuffer);
-			strcpy_s(buffer, 19, str);
-			GlobalUnlock(clipbuffer);
-			SetClipboardData(CF_TEXT, clipbuffer);
-			CloseClipboard();
-		}
-	}
-	mouseDown = evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN;
-}
+//GameWindow cEx;
+//bool mouseDown;
+//UINT64 bb;
+//
+//static const char* hex = "0123456789ABCDEF";
+//
+//void onMouse(MOUSE_EVENT_RECORD evt)
+//{
+//	IVec2 mP = IVec2(evt.dwMousePosition.X / 8, evt.dwMousePosition.Y / 8);
+//	int shift = POS_TO_INDEX(mP);
+//	if (!mouseDown && (evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN) && shift >= 0 && mP.isChessPos())
+//	{
+//		mouseDown = true;
+//
+//		bb ^= 1ULL << shift;
+//		cEx.drawSprite((bb & 1ULL << shift) ? 0xff : 0x00, 8*mP.y, 8*mP.x);
+//
+//		char str[19] { '0', 'x' };
+//		str[18] = 0;
+//		UINT64 c = bb;
+//		for (int i = 15; i >= 0; i--)
+//		{
+//			str[i + 2] = hex[c & 0xf];
+//			c >>= 4;
+//		}
+//
+//		put your text in source
+//		if (OpenClipboard(NULL))
+//		{
+//			HGLOBAL clipbuffer;
+//			char* buffer;
+//			EmptyClipboard();
+//			clipbuffer = GlobalAlloc(GMEM_DDESHARE, 19);
+//			buffer = (char*)GlobalLock(clipbuffer);
+//			strcpy_s(buffer, 19, str);
+//			GlobalUnlock(clipbuffer);
+//			SetClipboardData(CF_TEXT, clipbuffer);
+//			CloseClipboard();
+//		}
+//	}
+//	mouseDown = evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN;
+//}
 
 int main()
 {
