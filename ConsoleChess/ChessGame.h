@@ -40,8 +40,8 @@ enum Layers
 {
 	LayerBoard = 0,
 	LayerMoves = 1,
-	LayerCheck = 2,
-	LayerSelected = 3,
+	LayerSelected = 2,
+	LayerCheck = 3,
 	LayerPiece = 4,
 	LayerText = 5,
 	LayerRestart = 6
@@ -290,7 +290,7 @@ public:
 				}
 				if (attackedCrits[pos])
 				{
-					window.layers[LayerMoves].drawSprite(TgtSqrSprite, 8 * pos, Transparent << 4);
+					window.layers[LayerCheck].drawSprite(TgtSqrSprite, 8 * pos, Transparent << 4);
 				}
 				// Draw piece
 				if (piece.id != 0)
@@ -377,6 +377,19 @@ public:
 		}
 	}
 
+	void finalizeMove()
+	{
+		Byte88 prvCrits = Byte88(attackedCrits);
+		int nLegalMoves = calculateLegalMoves(currTeam);
+		int nChecks = computeChecks(currTeam);
+
+		// Check for game end
+		if (nLegalMoves == 0) gameState = (nChecks != 0) ? Checkmate : Stalemate;
+		else gameState = InProgress;
+
+		selectedSqr = IVec2(-1, -1);
+	}
+
 	// Event handler, called during a mouse event.
 	void onMouse(MOUSE_EVENT_RECORD evt)
 	{
@@ -385,7 +398,7 @@ public:
 
 		if (evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN)
 		{
-			if (boardPos.y == 6 && boardPos.x >= 8)
+			if ((curPos.y - 4) / 8 == 6 && curPos.x >= 64)
 			{	// Clicking on restart button
 				beginGame();
 				return;
@@ -404,14 +417,7 @@ public:
 						}
 						else
 						{
-							Byte88 prvCrits = Byte88(attackedCrits);
-							int nLegalMoves = calculateLegalMoves(currTeam);
-							int nChecks = computeChecks(currTeam);
-
-							// Check for game end
-							if (nLegalMoves == 0) gameState = (nChecks != 0) ? Checkmate : Stalemate;
-
-							selectedSqr = IVec2(-1, -1);
+							finalizeMove();
 						}
 					}	
 				}
@@ -431,11 +437,12 @@ public:
 					if (board.getPiece(selectedSqr).id == i) { continue; }
 					if (pieceDefs[i]->critical) { continue; }
 					// Get piece corner position in console
-					IVec2 v = IVec2(13 + 10 * (j % 4), 10 + 10 * (j / 4));
+					IVec2 v = IVec2(77 + 10 * (j % 4), 10 + 10 * (j / 4));
 					// User clicked on this piece
 					if ((curPos - v).in88Square()) 
 					{
-
+						board[selectedSqr] = (board[selectedSqr] & PIECE_TEAM) | pieceDefs[i]->id;
+						finalizeMove();
 						break;
 					}
 					j++;
