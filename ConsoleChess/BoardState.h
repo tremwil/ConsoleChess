@@ -6,8 +6,8 @@
 #define PIECE_ID      0b00001111
 #define PIECE_TEAM    0b00010000
 #define PIECE_MOVED   0b00100000
-#define PIECE_SP1     0b01000000
-#define PIECE_SP2	  0b10000000
+#define PIECE_SPTEMP  0b01000000
+#define PIECE_SPPERM  0b10000000
 #define PIECE_SPECIAL 0b11000000
 
 struct Piece
@@ -15,19 +15,21 @@ struct Piece
 	byte id : 4;		// Piece ID (1-15)
 	byte team : 1;		// Piece team (black/white)
 	byte moved : 1;		// if piece moved since start
-	byte special : 2;	// special bits reserved for the piece
+	byte spTemp : 1;	// special bits reserved for the piece, last one move
+	byte spPerm : 1;	// special bits reserved for the piece, last forever
 
 	Piece(byte b)
 	{
 		id = b & 0xf; b >>= 4;
 		team = b & 1; b >>= 1;
 		moved = b & 1; b >>= 1;
-		special = b;
+		spTemp = b & 1; b >>= 1;
+		spPerm = b;
 	}
 
 	byte getByte()
 	{
-		return special << 6 | moved << 5 | team << 4 | id;
+		return spPerm << 7 | spTemp << 6 | moved << 5 | team << 4 | id;
 	}
 };
 

@@ -115,7 +115,7 @@ private:
 		window.layers.push_back(Layer(64, 64, Transparent << 4, IVec2(64, 0)));
 		// Init text layers: dynamic and constant for restart btn
 		window.layers.push_back(Layer(64, 64, Transparent << 4, IVec2(64, 0)));
-		window.spriteText("RESTART", LayerRestart, IVec2(4, 48), WhiteFill << 4, BlackFill << 4, BlackOutline << 4);
+		window.spriteText("RESTART", LayerRestart, IVec2(4, 52), WhiteFill << 4, BlackFill << 4, BlackOutline << 4);
 	}
 public:
 
@@ -161,6 +161,8 @@ public:
 	{
 		// Push copy of current board state
 		prvBoard = BoardState(board);
+		// Clear temp special bit
+		board &= ~PIECE_SPTEMP;
 		// Let piece perform the move
 		Piece p = board.getPiece(start);
 		bool promote = pieceDefs[p.id]->makeMove(start, end, board);
@@ -319,7 +321,7 @@ public:
 		}
 		else 
 		{
-			window.spriteText("PROMOTE", LayerText, IVec2(4, 8));
+			window.spriteText("PROMOTE", LayerText, IVec2(4, 0));
 			int j = 0;
 			for (int i = 0; i < 16; i++)
 			{
@@ -330,8 +332,8 @@ public:
 				if (pieceDefs[i]->critical) { continue; }
 				// Get white sprite for piece
 				Byte88 sprite = (pieceDefs[i]->sprite >> 1) & 0xf0;
-				// Display piece
-				window.layers[LayerText].drawSprite(sprite, IVec2(4 + j % 4, 16 + j / 4), Transparent << 4);
+				// Display pieces
+				window.layers[LayerText].drawSprite(sprite, IVec2(13 + 10 * (j % 4), 10 + 10 * (j / 4)), Transparent << 4);
 				j++;
 			}
 		}
@@ -378,7 +380,8 @@ public:
 	// Event handler, called during a mouse event.
 	void onMouse(MOUSE_EVENT_RECORD evt)
 	{
-		IVec2 boardPos = IVec2(evt.dwMousePosition.X / 8, evt.dwMousePosition.Y / 8);
+		IVec2 curPos = IVec2(evt.dwMousePosition.X, evt.dwMousePosition.Y);
+		IVec2 boardPos = curPos / 8;
 
 		if (evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN)
 		{
@@ -387,24 +390,30 @@ public:
 				beginGame();
 				return;
 			}
-			if (gameState == InProgress && boardPos.isChessPos() && selectedSqr != boardPos)
+			if (gameState == InProgress && boardPos.in88Square() && selectedSqr != boardPos)
 			{
 				if (board[boardPos] == 0 || board.getPiece(boardPos).team != currTeam)
 				{
-					if (selectedSqr.isChessPos() && legalMoves[selectedSqr.y << 3 | selectedSqr.x][boardPos])
+					if (selectedSqr.in88Square() && legalMoves[selectedSqr.y << 3 | selectedSqr.x][boardPos])
 					{
 						// Move piece, if promoting:
-						if (makeMove(selectedSqr, boardPos)) { gameState == Promoting; }
-						else { selectedSqr = IVec2(-1, -1); }
+						if (makeMove(selectedSqr, boardPos)) 
+						{ 
+							gameState = Promoting;
+							selectedSqr = boardPos;
+						}
+						else
+						{
+							Byte88 prvCrits = Byte88(attackedCrits);
+							int nLegalMoves = calculateLegalMoves(currTeam);
+							int nChecks = computeChecks(currTeam);
 
-						Byte88 prvCrits = Byte88(attackedCrits);
-						int nLegalMoves = calculateLegalMoves(currTeam);
-						int nChecks = computeChecks(currTeam);
+							// Check for game end
+							if (nLegalMoves == 0) gameState = (nChecks != 0) ? Checkmate : Stalemate;
 
-						// Check for game end
-						if (nLegalMoves == 0) gameState = (nChecks != 0) ? Checkmate : Stalemate;
-					}
-					
+							selectedSqr = IVec2(-1, -1);
+						}
+					}	
 				}
 				else
 				{
@@ -413,11 +422,28 @@ public:
 			}
 			else if (gameState == Promoting)
 			{
+				int j = 0;
+				for (int i = 0; i < 16; i++)
+				{
+					// Avoid NULL pointer
+					if (pieceDefs[i] == NULL) { continue; }
+					// Can't promote to self or critical
+					if (board.getPiece(selectedSqr).id == i) { continue; }
+					if (pieceDefs[i]->critical) { continue; }
+					// Get piece corner position in console
+					IVec2 v = IVec2(13 + 10 * (j % 4), 10 + 10 * (j / 4));
+					// User clicked on this piece
+					if ((curPos - v).in88Square()) 
+					{
 
+						break;
+					}
+					j++;
+				}
 			}
 		}
-		if (evt.dwEventFlags & MOUSE_MOVED && boardPos.isChessPos() && hoverSqr != boardPos)
-			hoverSqr = boardPos;
+		if (evt.dwEventFlags & MOUSE_MOVED && hoverSqr != boardPos)
+			hoverSqr = boardPos.in88Square() ? boardPos : IVec2(-1, -1);
 		
 		redraw();
 	}

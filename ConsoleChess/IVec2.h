@@ -36,7 +36,7 @@ struct IVec2
 	}
 
 	// True if this Vec2 represents a position on a chess board 
-	bool isChessPos() const
+	bool in88Square() const
 	{
 		return 0 <= x && x < 8 && 0 <= y && y < 8;
 	}

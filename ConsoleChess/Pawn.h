@@ -32,7 +32,7 @@ public:
 				if (cap.team != p.team && cap.id != 0) return true;
 				// En passant
 				Piece enp = board.getPiece(start + IVec2(i,0));
-				if (cap.id == 0 && enp.team != p.team && enp.id == id && enp.special == 1) return true;
+				if (cap.id == 0 && enp.team != p.team && enp.id == id && enp.spTemp == 1) return true;
 			}
 		}
 		return false;
@@ -49,10 +49,10 @@ public:
 			board[start + IVec2(delta.x, 0)] = 0;
 		}
 		// Set piece moved flag, and clear special bits
-		board[end] = (board[start] | PIECE_MOVED) & ~PIECE_SPECIAL;
+		board[end] = board[start] | PIECE_MOVED;
 		board[start] = 0;
 		// Set special bits to 1 if pawn push
-		if (abs(delta.y) > 1) board[end] |= PIECE_SP1;
+		if (abs(delta.y) > 1) board[end] |= PIECE_SPTEMP;
 		// Return correct promote flag
 		return end.y == 0 || end.y == 7;
 	}
