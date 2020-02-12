@@ -47,9 +47,6 @@
     <ClInclude Include="ChessGame.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
-    <ClInclude Include="ConsoleEx.h">
-      <Filter>Header Files\Engine</Filter>
-    </ClInclude>
     <ClInclude Include="IVec2.h">
       <Filter>Header Files\Engine</Filter>
     </ClInclude>
@@ -61,6 +58,21 @@
     </ClInclude>
     <ClInclude Include="SpriteDefs.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Pawn.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="King.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PixelFont.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="GameWindow.h">
+      <Filter>Header Files\Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Layer.h">
+      <Filter>Header Files\Engine</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

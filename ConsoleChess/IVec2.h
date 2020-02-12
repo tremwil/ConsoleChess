@@ -2,41 +2,41 @@
 #include <cmath>
 #include <Windows.h>
 
-/// INT8 (signed char) Vec2
+/// int (signed char) Vec2
 struct IVec2
 {
-	INT8 x; // X coordinate
-    INT8 y; // Y corrdinate
+	int x; // X coordinate
+    int y; // Y corrdinate
  
 	IVec2() : x(0), y(0) {};
-	IVec2(INT8 x, INT8 y) : x(x), y(y) {};
+	IVec2(int x, int y) : x(x), y(y) {};
 
 	// Square of Euclidian distance
-	INT8 lenSqr()
+	int lenSqr() const
 	{
 		return x * x + y * y;
 	}
 
 	// Euclidian (L2) length
-	float len()
+	float len() const
 	{
 		return sqrtf((float)(x * x + y * y));
 	}
 
 	// L1 metric length (taxicab metric)
-	INT8 lenL1() 
+	int lenL1() const
 	{
 		return abs(x) + abs(y);
 	}
 
 	// True if a perfect multiple of other vector
-	bool multipleOf(const IVec2& v) 
+	bool multipleOf(const IVec2& v) const
 	{
 		return x % v.x == 0 && y % v.y == 0;
 	}
 
 	// True if this Vec2 represents a position on a chess board 
-	bool isChessPos()
+	bool isChessPos() const
 	{
 		return 0 <= x && x < 8 && 0 <= y && y < 8;
 	}
@@ -50,7 +50,7 @@ struct IVec2
 		return *this;
 	}
 
-	IVec2 operator+(const IVec2& a)
+	IVec2 operator+(const IVec2& a) const
 	{
 		return IVec2(x + a.x, y + a.y);
 	}
@@ -67,7 +67,7 @@ struct IVec2
 		return IVec2(-x, -y);
 	}
 
-	IVec2 operator-(const IVec2& a)
+	IVec2 operator-(const IVec2& a) const
 	{
 		return IVec2(x - a.x, y - a.y);
 	}
@@ -79,19 +79,19 @@ struct IVec2
 		return *this;
 	}
 
-	IVec2 operator*(INT8 s)
+	IVec2 operator*(int s) const
 	{
 		return IVec2(x * s, y * s);
 	}
 
-	IVec2& operator*= (INT8 s)
+	IVec2& operator*= (int s)
 	{
 		x *= s;
 		y *= s;
 		return *this;
 	}
 
-	IVec2 operator*(const IVec2& a)
+	IVec2 operator*(const IVec2& a) const
 	{
 		return IVec2(x * a.x, y * a.y);
 	}
@@ -103,19 +103,19 @@ struct IVec2
 		return *this;
 	}
 
-	IVec2 operator/(INT8 s)
+	IVec2 operator/(int s) const
 	{
 		return IVec2(x / s, y / s);
 	}
 
-	IVec2& operator/= (INT8 s)
+	IVec2& operator/= (int s)
 	{
 		x /= s;
 		y /= s;
 		return *this;
 	}
 
-	IVec2 operator/(const IVec2& a)
+	IVec2 operator/(const IVec2& a) const
 	{
 		return IVec2(x / a.x, y / a.y);
 	}
@@ -127,7 +127,7 @@ struct IVec2
 		return *this;
 	}
 
-	IVec2 operator%(const IVec2& a)
+	IVec2 operator%(const IVec2& a) const
 	{
 		return IVec2(x % a.x, y % a.y);
 	}
@@ -139,14 +139,24 @@ struct IVec2
 		return *this;
 	}
 
-	bool operator== (const IVec2& a)
+	bool operator== (const IVec2& a) const
 	{
 		return a.x == x && a.y == y;
 	}
 
-	bool operator!= (const IVec2& a)
+	bool operator!= (const IVec2& a) const
 	{
 		return a.x != x || a.y != y;
 	}
 #pragma endregion
 };
+
+IVec2 operator*(int s, const IVec2& a)
+{
+	return a.operator*(s);
+}
+
+IVec2 operator/(int s, const IVec2& a)
+{
+	return a.operator/(s);
+}

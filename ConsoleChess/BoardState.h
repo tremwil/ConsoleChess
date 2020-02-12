@@ -64,12 +64,12 @@ struct BoardState : Byte88
 		memcpy_s(data, 64, ptr, 64);
 	}
 
-	Piece getPiece(int pos)
+	Piece getPiece(int pos) const
 	{
 		return Piece(data[pos]);
 	}
 
-	Piece getPiece(IVec2 pos)
+	Piece getPiece(IVec2 pos) const
 	{
 		return Piece(data[pos.y << 3 | pos.x]);
 	}
