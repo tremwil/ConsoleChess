@@ -90,7 +90,7 @@ public:
 	}
 
 	// Check if potential move is pseudolegal
-	bool isValidMove(IVec2 start, IVec2 end, BoardState& board) override
+	bool isValidMove(IVec2 start, IVec2 end, const BoardState &board) override
 	{
 		// Check for team of piece at the end 
 		if (board[end] != 0 && board.getPiece(end).team == board.getPiece(start).team) { return false; }

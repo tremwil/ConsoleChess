@@ -156,14 +156,17 @@
   <ItemGroup>
     <ClInclude Include="bitboard.h" />
     <ClInclude Include="Board.h" />
+    <ClInclude Include="Layer.h" />
     <ClInclude Include="ChessGame.h" />
     <ClInclude Include="BoardState.h" />
-    <ClInclude Include="ConsoleEx.h" />
+    <ClInclude Include="GameWindow.h" />
     <ClInclude Include="constants.h" />
     <ClInclude Include="IVec2.h" />
+    <ClInclude Include="King.h" />
     <ClInclude Include="Move.h" />
     <ClInclude Include="Byte88.h" />
     <ClInclude Include="Pawn.h" />
+    <ClInclude Include="PixelFont.h" />
     <ClInclude Include="SpriteDefs.h" />
     <ClInclude Include="UnitMovePiece.h" />
     <ClInclude Include="PieceDef.h" />

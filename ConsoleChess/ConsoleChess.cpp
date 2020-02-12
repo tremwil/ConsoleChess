@@ -15,7 +15,7 @@
 int main()
 {
 	// Pawn definition
-	Pawn pawn = Pawn(1);
+	Pawn pawn = Pawn(1, PawnSprite);
 	// Bishop definition
 	UnitMovePiece bishop = UnitMovePiece(2, false, false, BishopSprite);
 	bishop.generateMoveset(std::vector<IVec2> {IVec2(1, 1)}, MoveSymmetry::Rotate90, true);

@@ -4,7 +4,10 @@
 #include <iostream>
 #include <Windows.h>
 #include "Byte88.h"
+#include "Layer.h"
+#include "PixelFont.h"
 #include <functional>
+#include <vector>
 
 /********************************************
 * NOTE: THIS CODE WILL ONLY COMPILE ON A WINDOWS 
@@ -21,7 +24,7 @@ typedef std::function<void(WINDOW_BUFFER_SIZE_RECORD)> BUFFER_EVENT_PROC;
 #define SZ_RECORD_BUFFER 128
 
 // Class implementing advanced features into the console, like events, font change, resize, etc.
-class ConsoleEx
+class GameWindow
 {
 private:
 	// Handle to console standard input
@@ -32,6 +35,44 @@ private:
 	INPUT_RECORD inputRecords[SZ_RECORD_BUFFER];
 	// Default Windows colormap
 	COLORREF cmapDefault[16];
+
+	bool ready;
+	int width;
+	int height;
+
+	Layer renderBuffer;
+	Layer backBuffer;
+
+	// Set console size in character rows and columns.
+	void setConsoleBufferSize(int row, int col)
+	{
+		COORD c;
+		c.X = col + 1;
+		c.Y = row + 1;
+		SetConsoleScreenBufferSize(hConsoleOut, c);
+
+		SMALL_RECT rect = SMALL_RECT();
+		rect.Top = 0;
+		rect.Left = 0;
+		rect.Right = col;
+		rect.Bottom = row;
+		int ret = SetConsoleWindowInfo(hConsoleOut, true, &rect);
+	};
+
+	// Set the font used in the console and its size.
+	BOOL setFont(const WCHAR* fontFace, int width, int height)
+	{
+		CONSOLE_FONT_INFOEX cfi;
+		cfi.cbSize = sizeof(cfi);
+		cfi.nFont = 0;
+		cfi.dwFontSize.X = width;  // Width of each character in the font
+		cfi.dwFontSize.Y = height; // Height
+		cfi.FontFamily = FF_DONTCARE;
+		cfi.FontWeight = FW_NORMAL;
+		wcscpy_s(cfi.FaceName, fontFace);
+		return SetCurrentConsoleFontEx(hConsoleOut, FALSE, &cfi);
+	}
+
 public:
 	KEY_EVENT_PROC onKeyEvent; // Instance-defined key event handler
 	MOUSE_EVENT_PROC onMouseEvent; // Instance-defined mouse event handler 
@@ -40,8 +81,16 @@ public:
 	BUFFER_EVENT_PROC onBufferEvent; // Instance-defined buffer resize event handler
 	COLORREF colormap[16];
 
+	byte textFill;
+	byte textOutline;
+	byte textBackground;
+
+	byte alphaColor;
+
+	std::vector<Layer> layers;
+
 	// Default CTOR
-	ConsoleEx() : inputRecords{ } 
+	GameWindow() : inputRecords{}
 	{
 		hConsoleIn = GetStdHandle(STD_INPUT_HANDLE);
 		hConsoleOut = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -57,23 +106,33 @@ public:
 		// Copy default colormap into cmapDefault and colormap
 		memcpy_s(cmapDefault, sizeof(cmapDefault), cBuffInfo.ColorTable, sizeof(cmapDefault));
 		memcpy_s(colormap, sizeof(colormap), cmapDefault, sizeof(colormap));
+
+		ready = false;
+		textFill = 0xF0;
+		textOutline = 0x70;
+		textBackground = 0x00;
+		alphaColor = 0x00;
 	}
 
-	// Set console size in character rows and columns.
-	void setConsoleBufferSize(int row, int col)
-	{
-		SMALL_RECT rect = SMALL_RECT();
-		rect.Top = 0;
-		rect.Left = 0;
-		rect.Right = col;
-		rect.Bottom = row;
-		SetConsoleWindowInfo(hConsoleOut, true, &rect);
+	void setup(int width, int height, int fontWidth, int fontHeight)
+	{		
+		SetConsoleMode(hConsoleIn, ENABLE_EXTENDED_FLAGS | ~ENABLE_QUICK_EDIT_MODE);
+		setFont(L"Courrier New", fontWidth, fontHeight);
 
-		COORD c;
-		c.X = col;
-		c.Y = row;
-		SetConsoleScreenBufferSize(hConsoleOut, c);
-	};
+		// Block console window resizing
+		HWND hWindow = GetConsoleWindow();
+		SetWindowLong(hWindow, GWL_STYLE, GetWindowLong(hWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
+		
+		setConsoleBufferSize(height, width);
+
+		this->width = width;
+		this->height = height;
+		renderBuffer = Layer(width, height, alphaColor, IVec2(0, 0));
+		backBuffer = Layer(width, height, alphaColor, IVec2(0, 0));
+		layers = std::vector<Layer>{ };
+
+		ready = true;
+	}
 
 	// Call every iteration of a main loop to trigger instance-defined event handlers
 	void eventTick()
@@ -146,54 +205,51 @@ public:
 		SetConsoleCursorPosition(hConsoleOut, c);
 	}
 
-	// Set the font used in the console and its size.
-	BOOL setFont(const WCHAR* fontFace, int width, int height)
+	// Draw text as 8x8 sprites using the pixel font, relative to layer.
+	void spriteText(const char* text, int layer, IVec2 pos, byte bg, byte fill, byte outline)
 	{
-		CONSOLE_FONT_INFOEX cfi;
-		cfi.cbSize = sizeof(cfi);
-		cfi.nFont = 0;
-		cfi.dwFontSize.X = width;  // Width of each character in the font
-		cfi.dwFontSize.Y = height; // Height
-		cfi.FontFamily = FF_DONTCARE;
-		cfi.FontWeight = FW_NORMAL;
-		wcscpy_s(cfi.FaceName, fontFace);
-		return SetCurrentConsoleFontEx(hConsoleOut, FALSE, &cfi);
-	}
+		int i = -1;
+		IVec2 cPos = pos;
 
-	// Set font to enable square space characters to draw pixel art. 
-	void initSpriteMode(int pxW, int pxH)
-	{
-		SetConsoleMode(hConsoleIn, ENABLE_EXTENDED_FLAGS | ~ENABLE_QUICK_EDIT_MODE);
-		setFont(L"Courrier New", pxW, pxH);
-
-		// Block console window resizing
-		HWND hWindow = GetConsoleWindow();
-		SetWindowLong(hWindow, GWL_STYLE, GetWindowLong(hWindow, GWL_STYLE) & ~WS_MAXIMIZEBOX & ~WS_SIZEBOX);
-	}
-
-	// Draw character sprite constitued of (BG, FG) colormap pairs in a 8x8 byte array.
-	void drawSprite(const Byte88 &sprite, int row, int col)
-	{
-		for (int i = 0; i < 64; i++)
+		while (text[++i])
 		{
-			if ((i & 7) == 0) setCursorPosition(row + (i >> 3), col);
-			SetConsoleTextAttribute(hConsoleOut, sprite[i]);
-			printf(" ");
-		}
-		setCursorPosition(63, 64);
-	}
-
-	// Draw character sprite constitued of (BG, FG) colormap pairs in a 8x8 byte array,
-	// considering values of 0 to be transparent. 
-	void drawSpriteAlpha(const Byte88 &sprite, int row, int col)
-	{
-		for (int i = 0; i < 64; i++)
-		{
-			setCursorPosition(row + (i >> 3), col + (i & 7));
-			if (sprite[i] != 0)
+			if (text[i] == '\n')
 			{
-				SetConsoleTextAttribute(hConsoleOut, sprite[i]);
+				cPos.y += 8;
+				cPos.x = pos.x;
+				continue;
+			}
+			Byte88 sprite = getCharSprite(text[i], bg, fill, outline);
+			layers[layer].drawSprite(sprite, cPos, alphaColor);
+
+			cPos.x += 8;
+		}
+	}
+
+	// Draw text as 8x8 sprites using the pixel font.
+	void spriteText(const char* text, int layer, IVec2 pos)
+	{
+		spriteText(text, layer, pos, textBackground, textFill, textOutline);
+	}
+
+	// Invalidate the console window, causing it to be redrawn.
+	void invalidate()
+	{
+		renderBuffer.setAll(alphaColor);
+		for (int i = 0; i < layers.size(); i++)
+		{
+			renderBuffer.overlay(layers[i], alphaColor);
+		}
+
+		for (int i = 0; i < width * height; i++)
+		{
+			if (renderBuffer[i] != backBuffer[i])
+			{
+				setCursorPosition(i / width, i % width);
+				setColor(renderBuffer[i]);
 				printf(" ");
+
+				backBuffer[i] = renderBuffer[i];
 			}
 		}
 	}

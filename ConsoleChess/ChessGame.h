@@ -4,7 +4,7 @@
 #include <Windows.h>
 #include <vector>
 
-#include "ConsoleEx.h"
+#include "GameWindow.h"
 #include "PieceDef.h"
 #include "BoardState.h"
 
@@ -22,7 +22,7 @@ static const Byte88 TgtSqrSprite = Byte88(new byte[64]
 
 typedef enum 
 {
-	FullBlack		= 0x0,
+	Transparent		= 0x0,
 	WhiteFill		= 0x1,
 	WhiteOutline	= 0x2,
 	BlackFill		= 0x3,
@@ -33,14 +33,32 @@ typedef enum
 	SquarePossMove	= 0x8,
 	SquareInCheck	= 0x9,
 	SquareHover		= 0xA,
-	TextFg			= 0xB,
-	TextBg			= 0xC
+	FullWhite		= 0xB
 } ChessColor;
+
+enum Layers
+{
+	LayerBoard = 0,
+	LayerMoves = 1,
+	LayerCheck = 2,
+	LayerSelected = 3,
+	LayerPiece = 4,
+	LayerText = 5,
+	LayerRestart = 6
+};
+
+enum GameState
+{
+	InProgress,
+	Checkmate,
+	Stalemate,
+	Promoting
+};
 
 class ChessGame
 {
 private:
-	ConsoleEx consoleEx;
+	GameWindow window;
 
 	IVec2 hoverSqr;
 	IVec2 selectedSqr;
@@ -48,60 +66,72 @@ private:
 	Byte88 legalMoves[64];
 	BoardState prvBoard;
 
+	GameState gameState;
+
 	void init(std::vector<PieceDef*> pieces)
 	{
-		pieceDefs = std::vector<PieceDef*>{ NULL };
-		pieceDefs.insert(pieceDefs.end(), pieces.begin(), pieces.end());
-		for (int i = 1; i < pieceDefs.size(); i++)
+		for (int i = 0; i < pieces.size(); i++)
 		{
-			pieceDefs[i]->id = i;
+			pieceDefs[pieces[i]->id] = pieces[i];
 		}
 
-		currTeam = 1;
-		hoverSqr = IVec2(-1, -1);
-		selectedSqr = IVec2(-1, -1);
-		attackedCrits = Byte88();
-		prvBoard = BoardState();
+		window = GameWindow();
+		window.onKeyEvent = [this](KEY_EVENT_RECORD evt) { onKey(evt); };
+		window.onMouseEvent = [this](MOUSE_EVENT_RECORD evt) { onMouse(evt); };
 
-		calculateLegalMoves(currTeam);
+		window.colormap[Transparent] = 0x000000;
+		window.colormap[WhiteFill] = 0xe8f1ff;
+		window.colormap[WhiteOutline] = 0xc7c3c2;
+		window.colormap[BlackFill] = 0x9c7683;
+		window.colormap[BlackOutline] = 0x532b1d;
+		window.colormap[SquareWhite] = 0xaaccff;
+		window.colormap[SquareBlack] = 0x3256ab;
+		window.colormap[SquareInCheck] = 0x0335fc;
+		window.colormap[SquareSelected] = 0x5bcf88;
+		window.colormap[SquareHover] = 0x90f5b7;
+		window.colormap[SquarePossMove] = 0x90f5b7;
+		window.colormap[FullWhite] = 0xffffff;
+		window.applyColormap();
 
-		consoleEx = ConsoleEx();
-		consoleEx.onKeyEvent = [this](KEY_EVENT_RECORD evt) { onKey(evt); };
-		consoleEx.onMouseEvent = [this](MOUSE_EVENT_RECORD evt) { onMouse(evt); };
-		//consoleEx.onBufferEvent = [this](WINDOW_BUFFER_SIZE_RECORD evt) { onBufferResize(evt); };
+		window.textFill = WhiteFill << 4;
+		window.textOutline = WhiteOutline << 4;
+		window.textBackground = 0;
+		window.alphaColor = Transparent << 4;
 
-		consoleEx.initSpriteMode(14, 13);
-		consoleEx.setConsoleBufferSize(64, 64);
+		window.setup(128, 64, 14, 13);
 
-		consoleEx.colormap[FullBlack] = 0x000000;
-		consoleEx.colormap[WhiteFill] = 0xe8f1ff;
-		consoleEx.colormap[WhiteOutline] = 0xc7c3c2;
-		consoleEx.colormap[BlackFill] = 0x9c7683;
-		consoleEx.colormap[BlackOutline] = 0x532b1d;
-		consoleEx.colormap[SquareWhite] = 0xaaccff;
-		consoleEx.colormap[SquareBlack] = 0x3256ab;
-		consoleEx.colormap[SquareInCheck] = 0x0335fc;
-		consoleEx.colormap[SquareSelected] = 0x5bcf88;
-		consoleEx.colormap[SquareHover] = 0x90f5b7;
-		consoleEx.colormap[SquarePossMove] = 0x90f5b7;
-		consoleEx.colormap[TextBg] = 0x404040;
-		consoleEx.colormap[TextFg] = 0xd0d0d0;
-		consoleEx.applyColormap();
+		// Setup layers: board
+		window.layers.push_back(Layer(64, 64, Transparent << 4));
+		window.layers[LayerBoard].transform([](byte v, IVec2 pos)
+		{
+			bool isWhite = (pos.x / 8 & 1) == (pos.y / 8 & 1);
+			return (isWhite ? SquareWhite : SquareBlack) << 4;
+		});
+		// Init empty board layers
+		window.layers.push_back(Layer(64, 64, Transparent << 4));
+		window.layers.push_back(Layer(64, 64, Transparent << 4));
+		window.layers.push_back(Layer(64, 64, Transparent << 4));
+		window.layers.push_back(Layer(64, 64, Transparent << 4));
+		window.layers.push_back(Layer(64, 64, Transparent << 4, IVec2(64, 0)));
+		// Init text layers: dynamic and constant for restart btn
+		window.layers.push_back(Layer(64, 64, Transparent << 4, IVec2(64, 0)));
+		window.spriteText("RESTART", LayerRestart, IVec2(4, 48), WhiteFill << 4, BlackFill << 4, BlackOutline << 4);
 	}
 public:
-	
-	std::vector<PieceDef*> pieceDefs;
+
+	PieceDef* pieceDefs[16];
 	BoardState board;
+	BoardState startingBoard;
 
 	byte currTeam;
 
 	// Class constructor (default)
-	ChessGame(std::vector<PieceDef*> pieces) : board()
+	ChessGame(std::vector<PieceDef*> pieces) : startingBoard(), pieceDefs{ }
 	{
 		init(pieces);
 	};
 	// Constructor (w/state)
-	ChessGame(std::vector<PieceDef*> pieces, BoardState bstate) : board(bstate)
+	ChessGame(std::vector<PieceDef*> pieces, BoardState bstate) : startingBoard(bstate), pieceDefs{ }
 	{
 		init(pieces);
 	};
@@ -127,15 +157,17 @@ public:
 	}
 
 	// Make a move (without updating the rendered chess board).
-	void makeMove(IVec2 start, IVec2 end)
+	bool makeMove(IVec2 start, IVec2 end)
 	{
 		// Push copy of current board state
 		prvBoard = BoardState(board);
 		// Let piece perform the move
 		Piece p = board.getPiece(start);
-		pieceDefs[p.id]->makeMove(start, end, board);
+		bool promote = pieceDefs[p.id]->makeMove(start, end, board);
 		// Change current playing team
 		currTeam ^= 1;
+		// Return promotion flag
+		return promote;
 	}
 
 	// Undo a move (without updating the rendered chess board).
@@ -178,14 +210,19 @@ public:
 				IVec2 v = IVec2(i, j);
 				Piece p = board.getPiece(v);
 				if (p.id == 0 || p.team != team) { continue; }
-				if (pieceDefs[p.id]->critical && isAttacked(v)) 
-				{ 
-					attackedCrits[v] = 1; 
+				if (pieceDefs[p.id]->critical && isAttacked(v))
+				{
+					attackedCrits[v] = 1;
 					cnt++;
 				}
 			}
 		}
 		return cnt;
+	}
+
+	void promoteGUI()
+	{
+
 	}
 
 	// Calculate the legal moves of the current team, and return the amount
@@ -200,7 +237,7 @@ public:
 			IVec2 v = IVec2(k & 7, k >> 3);
 			Piece p = board.getPiece(k);
 			legalMoves[k] = Byte88();
-			if (p.team != team || p.id == 0) continue; 
+			if (p.team != team || p.id == 0) continue;
 			// Go through all squares for possible moves
 			for (int i = 0; i < 8; i++)
 			{
@@ -223,89 +260,109 @@ public:
 		}
 		return cnt;
 	}
-	
-	// Render a single square of the chess board.
-	void drawSquare(IVec2 pos)
-	{
-		Piece piece = board.getPiece(pos);
-		Byte88 sprite;
-		// Draw board marks if they appear at this square
-		if (pos == hoverSqr || pos == selectedSqr)
-		{
-			sprite = Byte88(((pos == selectedSqr) ? SquareSelected : SquareHover) << 4);
-			consoleEx.drawSprite(sprite, 8 * pos.y, 8 * pos.x);
-		}
-		else
-		{
-			// Draw square
-			bool isWhiteSqr = (pos.x & 1) == (pos.y & 1);
-			Byte88 sprite = Byte88((isWhiteSqr ? SquareWhite : SquareBlack) << 4);
-			consoleEx.drawSprite(sprite, 8 * pos.y, 8 * pos.x);
-		}
-		if (selectedSqr.x != -1 && legalMoves[selectedSqr.y << 3 | selectedSqr.x][pos])
-		{
-			sprite = TgtSqrSprite & 0xe0;
-			consoleEx.drawSpriteAlpha(sprite, 8 * pos.y, 8 * pos.x);
-		}
-		if (attackedCrits[pos])
-		{
-			consoleEx.drawSpriteAlpha(TgtSqrSprite, 8 * pos.y, 8 * pos.x);
-		}
-		// Draw piece
-		if (piece.id != 0)
-		{
-			sprite = Byte88(pieceDefs[piece.id]->sprite);
-			if (piece.team) { sprite = (sprite >> 1) & 0xf0; }
-			consoleEx.drawSpriteAlpha(sprite, 8 * pos.y, 8 * pos.x);
-		}
-	}
 
-	// Render all squares of the chess board.
-	void drawAllBoard()
+	void redraw()
 	{
+		// Draw selecteds
+		window.layers[LayerSelected].transform([this](byte v, IVec2 pos)
+		{
+			pos /= 8;
+			return ((pos == selectedSqr)? SquareSelected : (pos == hoverSqr) ? SquareHover : Transparent) << 4;
+		});
+		window.layers[LayerMoves].setAll(Transparent << 4);
+		window.layers[LayerCheck].setAll(Transparent << 4);
+		window.layers[LayerPiece].setAll(Transparent << 4);
+
 		for (int i = 0; i < 8; i++)
 		{
 			for (int j = 0; j < 8; j++)
 			{
-				drawSquare(IVec2(i, j));
+				IVec2 pos = IVec2(i, j);
+				Piece piece = board.getPiece(pos);
+				Byte88 sprite;
+
+				if (selectedSqr.x != -1 && legalMoves[selectedSqr.y << 3 | selectedSqr.x][pos])
+				{
+					sprite = TgtSqrSprite & 0xe0;
+					window.layers[LayerMoves].drawSprite(sprite, 8 * pos, Transparent << 4);
+				}
+				if (attackedCrits[pos])
+				{
+					window.layers[LayerMoves].drawSprite(TgtSqrSprite, 8 * pos, Transparent << 4);
+				}
+				// Draw piece
+				if (piece.id != 0)
+				{
+					sprite = Byte88(pieceDefs[piece.id]->sprite);
+					if (piece.team) { sprite = (sprite >> 1) & 0xf0; }
+					window.layers[LayerPiece].drawSprite(sprite, 8 * pos, Transparent << 4);
+				}
 			}
 		}
+
+		// Clear text layer
+		window.layers[LayerText].setAll(Transparent << 4);
+		if (gameState == Stalemate)
+		{
+			window.spriteText("DRAW!", LayerText, IVec2(12, 16));
+		}
+		else if (gameState != Promoting)
+		{
+			// Flip team if game state is ended
+			bool team = currTeam ^ (gameState != InProgress);
+			byte fill = (team ? WhiteFill : BlackFill) << 4;
+			byte outline = (team ? WhiteOutline : BlackOutline) << 4;
+			window.spriteText(team ? "WHITE" : "BLACK", LayerText, IVec2(12, 8), Transparent << 4, fill, outline);
+
+			const char* msg = (gameState == InProgress) ? " CLICK \nTO MOVE" : " WINS! ";
+			window.spriteText(msg, LayerText, IVec2(4, 16));
+		}
+		else 
+		{
+			window.spriteText("PROMOTE", LayerText, IVec2(4, 8));
+			int j = 0;
+			for (int i = 0; i < 16; i++)
+			{
+				// Avoid NULL pointer
+				if (pieceDefs[i] == NULL) { continue; }
+				// Can't promote to self or critical
+				if (board.getPiece(selectedSqr).id == i) { continue; }
+				if (pieceDefs[i]->critical) { continue; }
+				// Get white sprite for piece
+				Byte88 sprite = (pieceDefs[i]->sprite >> 1) & 0xf0;
+				// Display piece
+				window.layers[LayerText].drawSprite(sprite, IVec2(4 + j % 4, 16 + j / 4), Transparent << 4);
+				j++;
+			}
+		}
+
+		window.invalidate();
 	}
 
-	// Redraw elements of the board that were changed.
-	void renderBoardChanges()
+	void beginGame()
 	{
-		for (int i = 0; i < 8; i++)
-		{
-			for (int j = 0; j < 8; j++)
-			{
-				IVec2 v = IVec2(i, j);
-				if (prvBoard[v] != board[v]) { drawSquare(v); }
-			}
-		}
-	}
+		board = BoardState(startingBoard);
 
-	// Redraw the squares where there is a 1 in the Byte88
-	void drawMaskedBoard(const Byte88 &mask)
-	{
-		for (int i = 0; i < 8; i++)
-		{
-			for (int j = 0; j < 8; j++)
-			{
-				IVec2 v = IVec2(i, j);
-				if (mask[v]) { drawSquare(v); }
-			}
-		}
+		gameState = InProgress;
+		currTeam = 1;
+		hoverSqr = IVec2(-1, -1);
+		selectedSqr = IVec2(-1, -1);
+		attackedCrits = Byte88();
+		prvBoard = BoardState();
+
+		calculateLegalMoves(currTeam);
+
+		redraw();
 	}
 
 	// Begin the chess game.
 	void mainloop()
 	{
-		drawAllBoard();
+		beginGame();
 
 		while (true)
 		{
-			consoleEx.eventTick();
+			window.eventTick();
 		}
 	}
 
@@ -322,61 +379,47 @@ public:
 	void onMouse(MOUSE_EVENT_RECORD evt)
 	{
 		IVec2 boardPos = IVec2(evt.dwMousePosition.X / 8, evt.dwMousePosition.Y / 8);
-		IVec2 prvSqr = IVec2(-1,-1);
 
 		if (evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN)
 		{
-			if (boardPos.isChessPos() && selectedSqr != boardPos)
+			if (boardPos.y == 6 && boardPos.x >= 8)
+			{	// Clicking on restart button
+				beginGame();
+				return;
+			}
+			if (gameState == InProgress && boardPos.isChessPos() && selectedSqr != boardPos)
 			{
 				if (board[boardPos] == 0 || board.getPiece(boardPos).team != currTeam)
 				{
 					if (selectedSqr.isChessPos() && legalMoves[selectedSqr.y << 3 | selectedSqr.x][boardPos])
 					{
-						prvSqr = selectedSqr;
-						selectedSqr = IVec2(-1, -1);
-						drawMaskedBoard(legalMoves[prvSqr.y << 3 | prvSqr.x]);
+						// Move piece, if promoting:
+						if (makeMove(selectedSqr, boardPos)) { gameState == Promoting; }
+						else { selectedSqr = IVec2(-1, -1); }
 
-						makeMove(prvSqr, boardPos);
-						renderBoardChanges();
-
+						Byte88 prvCrits = Byte88(attackedCrits);
 						int nLegalMoves = calculateLegalMoves(currTeam);
 						int nChecks = computeChecks(currTeam);
-						drawMaskedBoard(attackedCrits);
-						// Check for game state
-						if (nLegalMoves == 0)
-						{
-							if (nChecks == 0) { } // Draw
-							else { } // Win
-						}
+
+						// Check for game end
+						if (nLegalMoves == 0) gameState = (nChecks != 0) ? Checkmate : Stalemate;
 					}
 					
 				}
 				else
 				{
-					prvSqr = selectedSqr;
 					selectedSqr = boardPos;
-					drawSquare(selectedSqr);
-					drawMaskedBoard(legalMoves[selectedSqr.y << 3 | selectedSqr.x]);
-					drawMaskedBoard(legalMoves[prvSqr.y << 3 | prvSqr.x]);
 				}
 			}
-		}
-		//if (evt.dwButtonState & RI_MOUSE_BUTTON_2_DOWN)
-		//{
-		//	prvSqr = selectedSqr;
-		//	selectedSqr = IVec2(-1, -1);
-		//	if (prvSqr.isChessPos()) drawMaskedBoard(legalMoves[prvSqr.y << 3 | prvSqr.x]);
-		//}
-		if (evt.dwEventFlags & MOUSE_MOVED)
-		{
-			if (boardPos.isChessPos() && hoverSqr != boardPos)
+			else if (gameState == Promoting)
 			{
-				prvSqr = hoverSqr;
-				hoverSqr = boardPos;
-				drawSquare(boardPos);
+
 			}
 		}
-		if (prvSqr.isChessPos()) drawSquare(prvSqr);
+		if (evt.dwEventFlags & MOUSE_MOVED && boardPos.isChessPos() && hoverSqr != boardPos)
+			hoverSqr = boardPos;
+		
+		redraw();
 	}
 };
 

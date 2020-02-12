@@ -3,6 +3,8 @@
 #include <Windows.h>
 #include <algorithm>
 
+#define POS_TO_INDEX(pos) ((pos).y << 3 | (pos).x)
+
 // Small struct equivalent to an 8x8 byte array
 struct Byte88
 {

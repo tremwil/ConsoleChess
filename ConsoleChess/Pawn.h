@@ -6,10 +6,10 @@ class Pawn : public PieceDef
 {
 public:
 	// Default pawn ctor
-	Pawn(byte id) : PieceDef(id, false, PawnSprite) { }
+	Pawn(byte id, Byte88 sprite) : PieceDef(id, false, sprite) { }
 
 	// Check if potential move is pseudolegal, implemented by specific piece class
-	bool isValidMove(IVec2 start, IVec2 end, BoardState& board) override
+	bool isValidMove(IVec2 start, IVec2 end, const BoardState &board) override
 	{
 		IVec2 delta = end - start;
 		Piece p = board.getPiece(start);
@@ -39,7 +39,7 @@ public:
 	}
 
 	// Make move for simple pieces, overwrite if necessary (ex. en passant and castle)
-	void makeMove(IVec2 start, IVec2 end, BoardState& board) override
+	bool makeMove(IVec2 start, IVec2 end, BoardState& board) override
 	{
 		IVec2 delta = end - start;
 		Piece p = board.getPiece(start);
@@ -53,5 +53,7 @@ public:
 		board[start] = 0;
 		// Set special bits to 1 if pawn push
 		if (abs(delta.y) > 1) board[end] |= PIECE_SP1;
+		// Return correct promote flag
+		return end.y == 0 || end.y == 7;
 	}
 };
