@@ -20,21 +20,21 @@ static const Byte88 TgtSqrSprite = Byte88(new byte[64]
 	0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90
 });
 
-typedef enum 
+enum ChessColor
 {
-	Transparent		= 0x0,
-	WhiteFill		= 0x1,
-	WhiteOutline	= 0x2,
-	BlackFill		= 0x3,
-	BlackOutline	= 0x4,
-	SquareWhite		= 0x5,
-	SquareBlack		= 0x6,
-	SquareSelected	= 0x7,
-	SquarePossMove	= 0x8,
-	SquareInCheck	= 0x9,
-	SquareHover		= 0xA,
-	FullWhite		= 0xB
-} ChessColor;
+	Transparent = 0x0,
+	WhiteFill = 0x1,
+	WhiteOutline = 0x2,
+	BlackFill = 0x3,
+	BlackOutline = 0x4,
+	SquareWhite = 0x5,
+	SquareBlack = 0x6,
+	SquareSelected = 0x7,
+	SquarePossMove = 0x8,
+	SquareInCheck = 0x9,
+	SquareHover = 0xA,
+	FullWhite = 0xB
+};
 
 enum Layers
 {
@@ -66,7 +66,7 @@ private:
 	Byte88 legalMoves[64];
 	BoardState prvBoard;
 
-	GameState gameState;
+	int gameState;
 
 	void init(std::vector<PieceDef*> pieces)
 	{
@@ -388,6 +388,8 @@ public:
 		else gameState = InProgress;
 
 		selectedSqr = IVec2(-1, -1);
+
+		redraw();
 	}
 
 	// Event handler, called during a mouse event.
@@ -414,6 +416,7 @@ public:
 						{ 
 							gameState = Promoting;
 							selectedSqr = boardPos;
+							redraw();
 						}
 						else
 						{
@@ -424,6 +427,7 @@ public:
 				else
 				{
 					selectedSqr = boardPos;
+					redraw();
 				}
 			}
 			else if (gameState == Promoting)
@@ -450,9 +454,13 @@ public:
 			}
 		}
 		if (evt.dwEventFlags & MOUSE_MOVED && hoverSqr != boardPos)
-			hoverSqr = boardPos.in88Square() ? boardPos : IVec2(-1, -1);
-		
-		redraw();
+		{
+			if (hoverSqr.in88Square() || boardPos.in88Square())
+			{
+				hoverSqr = hoverSqr = boardPos.in88Square() ? boardPos : IVec2(-1, -1);
+				redraw();
+			}
+		}
 	}
 };
 
