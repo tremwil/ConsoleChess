@@ -2,12 +2,13 @@
 #include "PieceDef.h"
 #include "SpriteDefs.h"
 
+// Subclass of PieceDef for a chess king
 class King : public PieceDef
 {
 public:
-	byte rookId;
+	byte rookId; // Id of rook, required for castling
 
-	// Default pawn ctor
+	// Default king ctor
 	King(byte id, byte rookId, Byte88 sprite) : PieceDef(id, true, sprite) 
 	{ 
 		this->rookId = rookId;
@@ -26,7 +27,7 @@ public:
 			IVec2 dir = IVec2((end.x > start.x) ? 1 : -1, 0);
 			IVec2 rookPos = IVec2((end.x > start.x) ? 7 : 0, start.y);
 			Piece rook = board.getPiece(rookPos);
-
+			// Rook is there and path is unobstructed
 			if (rook.id != rookId || rook.team != p.team) { return false; }
 			for (IVec2 sqr = start + dir; sqr != rookPos; sqr += dir)
 			{
@@ -36,7 +37,7 @@ public:
 		}
 		// Normal move case
 		if (board[end] == 0 || board.getPiece(end).team != p.team)
-		{
+		{	// Check if delta is in 3x3 square around self
 			return abs(delta.x) <= 1 && abs(delta.y) <= 1;
 		}
 		return false;
@@ -44,8 +45,8 @@ public:
 
 	bool makeMove(IVec2 start, IVec2 end, BoardState& board) override
 	{
+		// Get king piece and move delta
 		Piece p = board.getPiece(start);
-		Piece tgt = board.getPiece(end);
 		IVec2 delta = end - start;
 
 		// Normal move

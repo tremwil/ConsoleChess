@@ -1,6 +1,5 @@
 #pragma once
 
-#include <iostream>
 #include <Windows.h>
 #include <vector>
 
@@ -8,6 +7,7 @@
 #include "PieceDef.h"
 #include "BoardState.h"
 
+// Sprite used for potential moves and king in check marks
 static const Byte88 TgtSqrSprite = Byte88(new byte[64]
 {
 	0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90,
@@ -20,6 +20,7 @@ static const Byte88 TgtSqrSprite = Byte88(new byte[64]
 	0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90, 0x90
 });
 
+// Enum mapping colormap indices to their use
 enum ChessColor
 {
 	Transparent = 0x0,
@@ -36,6 +37,7 @@ enum ChessColor
 	FullWhite = 0xB
 };
 
+// Enum mapping layer indices to their use
 enum Layers
 {
 	LayerBoard = 0,
@@ -47,6 +49,7 @@ enum Layers
 	LayerRestart = 6
 };
 
+// Enum defining the different game states
 enum GameState
 {
 	InProgress,
@@ -55,26 +58,29 @@ enum GameState
 	Promoting
 };
 
+// Main class defining the behaviour of the chess game
 class ChessGame
 {
 private:
-	GameWindow window;
+	GameWindow window; // The game window
 
-	IVec2 hoverSqr;
-	IVec2 selectedSqr;
-	Byte88 attackedCrits;
-	Byte88 legalMoves[64];
-	BoardState prvBoard;
+	IVec2 hoverSqr;	// Square on which the mouse is located
+	IVec2 selectedSqr; // Square of selected piece
+	Byte88 attackedCrits; // Used as bool array for attacked crit pieces
+	Byte88 legalMoves[64]; // Array of 64 byte88s containing the legal moves for each piece for the current turn
+	BoardState prvBoard; // Previous board state
 
-	int gameState;
+	int gameState; // Current game state
 
 	void init(std::vector<PieceDef*> pieces)
 	{
+		// Assign the pieces in PieceDefs at their ID
 		for (int i = 0; i < pieces.size(); i++)
 		{
 			pieceDefs[pieces[i]->id] = pieces[i];
 		}
 
+		// Create game window and setup color-related stuff
 		window = GameWindow();
 		window.onKeyEvent = [this](KEY_EVENT_RECORD evt) { onKey(evt); };
 		window.onMouseEvent = [this](MOUSE_EVENT_RECORD evt) { onMouse(evt); };
@@ -98,6 +104,7 @@ private:
 		window.textBackground = 0;
 		window.alphaColor = Transparent << 4;
 
+		// NOTE: Change the font width and height here if the pixels are not square
 		window.setup(128, 64, 14, 13);
 
 		// Setup layers: board
@@ -119,11 +126,11 @@ private:
 	}
 public:
 
-	PieceDef* pieceDefs[16];
-	BoardState board;
-	BoardState startingBoard;
+	PieceDef* pieceDefs[16];	// Array of pointers to PieceDef
+	BoardState board;			// Current board state
+	BoardState startingBoard;	// Initial board state
 
-	byte currTeam;
+	byte currTeam; // Current team/color
 
 	// Class constructor (default)
 	ChessGame(std::vector<PieceDef*> pieces) : startingBoard(), pieceDefs{ }
@@ -139,13 +146,16 @@ public:
 	// Check if piece is attacked using a brute force approach
 	bool isAttacked(IVec2 pos)
 	{
+		// Get target piece
 		Piece tgt = board.getPiece(pos);
-		if (tgt.id == 0) { return false; }
+		if (tgt.id == 0) { return false; } // Can't attack a nonexistent piece
+		// Go through all squares on the board
 		for (int i = 0; i < 8; i++)
 		{
 			for (int j = 0; j < 8; j++)
 			{
 				IVec2 v = IVec2(i, j);
+				// Check if piece at that position of the board can attack the target
 				Piece att = board.getPiece(v);
 				if (att.id != 0 && att.team != tgt.team && pieceDefs[att.id]->isValidMove(v, pos, board))
 				{
@@ -185,11 +195,12 @@ public:
 
 	// Return true if any critical pieces are under attack
 	bool inCheck(bool team)
-	{
+	{	// Go through every square
 		for (int i = 0; i < 8; i++)
 		{
 			for (int j = 0; j < 8; j++)
 			{
+				// Check if the piece is a crit, and if yes check if it's attacked
 				IVec2 v = IVec2(i, j);
 				Piece p = board.getPiece(v);
 				if (p.id == 0 || p.team != team) { continue; }
@@ -201,30 +212,26 @@ public:
 
 	// Compute critical pieces in check inside attackedCrits and return # of checks
 	int computeChecks(bool team)
-	{
+	{	// setup list of attacked crit pieces
 		attackedCrits = Byte88();
 		int cnt = 0;
-
+		// Go through all squares
 		for (int i = 0; i < 8; i++)
 		{
 			for (int j = 0; j < 8; j++)
 			{
+				// Check if piece is crit and attacked
 				IVec2 v = IVec2(i, j);
 				Piece p = board.getPiece(v);
 				if (p.id == 0 || p.team != team) { continue; }
 				if (pieceDefs[p.id]->critical && isAttacked(v))
-				{
+				{	// Set to true in attackedCrits
 					attackedCrits[v] = 1;
-					cnt++;
+					cnt++; // Increment check counter
 				}
 			}
 		}
 		return cnt;
-	}
-
-	void promoteGUI()
-	{
-
 	}
 
 	// Calculate the legal moves of the current team, and return the amount
@@ -246,7 +253,7 @@ public:
 				for (int j = 0; j < 8; j++)
 				{
 					IVec2 u = IVec2(i, j);
-					// If move is pseudolegal, perform it and check for check
+					// If move is pseudolegal, perform it and see if it leads to check
 					if (pieceDefs[p.id]->isValidMove(v, u, board))
 					{
 						makeMove(v, u);
@@ -265,38 +272,40 @@ public:
 
 	void redraw()
 	{
-		// Draw selecteds
+		// Draw selected / hover square
 		window.layers[LayerSelected].transform([this](byte v, IVec2 pos)
 		{
-			pos /= 8;
+			pos /= 8; // Choose appropriate color or transparent
 			return ((pos == selectedSqr)? SquareSelected : (pos == hoverSqr) ? SquareHover : Transparent) << 4;
 		});
+		// Clear other layers
 		window.layers[LayerMoves].setAll(Transparent << 4);
 		window.layers[LayerCheck].setAll(Transparent << 4);
 		window.layers[LayerPiece].setAll(Transparent << 4);
 
+		// Go through the board
 		for (int i = 0; i < 8; i++)
 		{
 			for (int j = 0; j < 8; j++)
-			{
+			{	// Get current square position
 				IVec2 pos = IVec2(i, j);
 				Piece piece = board.getPiece(pos);
 				Byte88 sprite;
 
 				if (selectedSqr.x != -1 && legalMoves[selectedSqr.y << 3 | selectedSqr.x][pos])
-				{
-					sprite = TgtSqrSprite & 0xe0;
+				{	// If square is a legal move of the selected piece, draw green tgtSqrSprite
+					sprite = TgtSqrSprite & 0xe0; // bitwise op. to change color
 					window.layers[LayerMoves].drawSprite(sprite, 8 * pos, Transparent << 4);
 				}
 				if (attackedCrits[pos])
-				{
+				{	// If attacked, draw red target sprite
 					window.layers[LayerCheck].drawSprite(TgtSqrSprite, 8 * pos, Transparent << 4);
 				}
 				// Draw piece
 				if (piece.id != 0)
 				{
 					sprite = Byte88(pieceDefs[piece.id]->sprite);
-					if (piece.team) { sprite = (sprite >> 1) & 0xf0; }
+					if (piece.team) { sprite = (sprite >> 1) & 0xf0; } // Use bitwise to switch to white colors
 					window.layers[LayerPiece].drawSprite(sprite, 8 * pos, Transparent << 4);
 				}
 			}
@@ -305,7 +314,7 @@ public:
 		// Clear text layer
 		window.layers[LayerText].setAll(Transparent << 4);
 		if (gameState == Stalemate)
-		{
+		{	// Stalement, announce the draw
 			window.spriteText("DRAW!", LayerText, IVec2(12, 16));
 		}
 		else if (gameState != Promoting)
@@ -315,12 +324,12 @@ public:
 			byte fill = (team ? WhiteFill : BlackFill) << 4;
 			byte outline = (team ? WhiteOutline : BlackOutline) << 4;
 			window.spriteText(team ? "WHITE" : "BLACK", LayerText, IVec2(12, 8), Transparent << 4, fill, outline);
-
+			// Draw appropriate message depending on game state
 			const char* msg = (gameState == InProgress) ? " CLICK \nTO MOVE" : " WINS! ";
 			window.spriteText(msg, LayerText, IVec2(4, 16));
 		}
 		else 
-		{
+		{	// Promotion, draw promote text and potential pieces to promote to
 			window.spriteText("PROMOTE", LayerText, IVec2(4, 0));
 			int j = 0;
 			for (int i = 0; i < 16; i++)
@@ -337,31 +346,32 @@ public:
 				j++;
 			}
 		}
-
+		// Invalidate window to force re-drawing
 		window.invalidate();
 	}
 
 	void beginGame()
 	{
+		// Reset board to starting board
 		board = BoardState(startingBoard);
-
+		// Set default values for gameState, currTeam, etc.
 		gameState = InProgress;
 		currTeam = 1;
 		hoverSqr = IVec2(-1, -1);
 		selectedSqr = IVec2(-1, -1);
 		attackedCrits = Byte88();
 		prvBoard = BoardState();
-
+		// Calculate legal moves of current team
 		calculateLegalMoves(currTeam);
-
+		// Redraw board
 		redraw();
 	}
 
 	// Begin the chess game.
 	void mainloop()
-	{
+	{	// Init game
 		beginGame();
-
+		// Read key and mouse events forever
 		while (true)
 		{
 			window.eventTick();
@@ -372,13 +382,19 @@ public:
 	void onKey(KEY_EVENT_RECORD evt)
 	{
 		if (evt.wVirtualKeyCode == 'Q')
-		{
+		{	// Implements quitting the game using the key 'q'
 			exit(0);
+		}
+		if (evt.wVirtualKeyCode == 'R')
+		{	// Shortcut to restart the game
+			beginGame();
 		}
 	}
 
+	// Called to clean up the game state after a move is completely done
 	void finalizeMove()
 	{
+		// Compute crits, and legal moves for current team
 		Byte88 prvCrits = Byte88(attackedCrits);
 		int nLegalMoves = calculateLegalMoves(currTeam);
 		int nChecks = computeChecks(currTeam);
@@ -386,18 +402,17 @@ public:
 		// Check for game end
 		if (nLegalMoves == 0) gameState = (nChecks != 0) ? Checkmate : Stalemate;
 		else gameState = InProgress;
-
+		// Deselect square
 		selectedSqr = IVec2(-1, -1);
-
 		redraw();
 	}
 
 	// Event handler, called during a mouse event.
 	void onMouse(MOUSE_EVENT_RECORD evt)
-	{
+	{	// Get current mouse and board position
 		IVec2 curPos = IVec2(evt.dwMousePosition.X, evt.dwMousePosition.Y);
 		IVec2 boardPos = curPos / 8;
-
+		// If we are pressing left mouse button
 		if (evt.dwButtonState & RI_MOUSE_BUTTON_1_DOWN)
 		{
 			if ((curPos.y - 4) / 8 == 6 && curPos.x >= 64)
@@ -405,33 +420,34 @@ public:
 				beginGame();
 				return;
 			}
+			// Clicking inside the board on a square that is not selected
 			if (gameState == InProgress && boardPos.in88Square() && selectedSqr != boardPos)
-			{
+			{	// Check if clicking on a non-current team square
 				if (board[boardPos] == 0 || board.getPiece(boardPos).team != currTeam)
-				{
+				{	// If piece is selected and we are clicking on a legal move
 					if (selectedSqr.in88Square() && legalMoves[selectedSqr.y << 3 | selectedSqr.x][boardPos])
-					{
-						// Move piece, if promoting:
+					{	// Move piece and check if promoting:
 						if (makeMove(selectedSqr, boardPos)) 
-						{ 
+						{	// Promote state, fix the selected square to the piece's new position
 							gameState = Promoting;
 							selectedSqr = boardPos;
 							redraw();
 						}
 						else
-						{
+						{	// No promotion, just finalize the move
 							finalizeMove();
 						}
 					}	
 				}
 				else
-				{
+				{	// Clicked on a current team square, change selected piece
 					selectedSqr = boardPos;
 					redraw();
 				}
 			}
+			// Promotion state
 			else if (gameState == Promoting)
-			{
+			{	// Go through promotable pieces, calculating their icon's position
 				int j = 0;
 				for (int i = 0; i < 16; i++)
 				{
@@ -442,9 +458,9 @@ public:
 					if (pieceDefs[i]->critical) { continue; }
 					// Get piece corner position in console
 					IVec2 v = IVec2(77 + 10 * (j % 4), 10 + 10 * (j / 4));
-					// User clicked on this piece
+					// If user clicked on this piece
 					if ((curPos - v).in88Square()) 
-					{
+					{	// Set piece to chosen one, but keep piece team
 						board[selectedSqr] = (board[selectedSqr] & PIECE_TEAM) | pieceDefs[i]->id;
 						finalizeMove();
 						break;
@@ -453,11 +469,12 @@ public:
 				}
 			}
 		}
+		// if mouse was moved and not on the hoverSqr
 		if (evt.dwEventFlags & MOUSE_MOVED && hoverSqr != boardPos)
-		{
+		{	// If either hoverSqr or boardPos is on the board
 			if (hoverSqr.in88Square() || boardPos.in88Square())
-			{
-				hoverSqr = hoverSqr = boardPos.in88Square() ? boardPos : IVec2(-1, -1);
+			{	// Set hoverSqr to (-1,-1) if out of bounds and boardPos otherwise
+				hoverSqr = boardPos.in88Square() ? boardPos : IVec2(-1, -1);
 				redraw();
 			}
 		}

@@ -29,7 +29,7 @@ int main()
 	queen.generateMoveset(std::vector<IVec2> {IVec2(1, 0)}, Rotate45, true);
 	// King definition
 	King king = King(6, 4, KingSprite);
-
+	// Create vector of PieceDef pointers
 	std::vector<PieceDef*> pieces
 	{
 		&pawn,
@@ -39,7 +39,7 @@ int main()
 		&queen,
 		&king
 	};
-
+	// Initialize board state with initital chess position
 	BoardState board = BoardState(new byte[64]
 	{
 		0x04, 0x03, 0x02, 0x05, 0x06, 0x02, 0x03, 0x04,
@@ -51,7 +51,7 @@ int main()
 		0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11, 0x11,
 		0x14, 0x13, 0x12, 0x15, 0x16, 0x12, 0x13, 0x14
 	});
-
+	// Create ChessGame object based on pieces and board, and start its main loop
 	ChessGame game = ChessGame(pieces, board);
 	game.mainloop();
 }

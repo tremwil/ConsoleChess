@@ -5,6 +5,7 @@
 // Char stored as binary font; each bit is a pixel on/off
 // Made with simple enconding program using ConsoleEx drawSprite 
 // and mouse events to draw sprites in the console
+// Indexed by ASCII code - 32
 static const UINT64 PixelFont[96]
 {
 	0x0000000000000000, // Space
@@ -105,11 +106,15 @@ static const UINT64 PixelFont[96]
 	0x0000000000000000
 };
 
+// Get a sprite representing a certain character from the PixelFont.
 Byte88 getCharSprite(char chr, byte bgCol, byte fillCol, byte outlineCol)
 {
+	// Check if char is in standard printable ASCII range
 	if (chr >= 32 && chr < 128)
 	{
+		// Use read from bitboard to get the sprite
 		Byte88 sprite = Byte88(PixelFont[chr - 32], bgCol, fillCol);
+		// Add shading/outline before every fill pixel
 		for (int r = 0; r < 8; r++)
 		{
 			for (int c = 0; c < 7; c++)
@@ -121,5 +126,6 @@ Byte88 getCharSprite(char chr, byte bgCol, byte fillCol, byte outlineCol)
 		}
 		return sprite;
 	}
-	return Byte88();
+	// Char is not in range, return empty background sprite
+	return Byte88(bgCol);
 }

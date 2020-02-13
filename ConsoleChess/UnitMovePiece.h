@@ -4,6 +4,7 @@
 #include "PieceDef.h"
 #include <algorithm>
 
+// Enum defining the types of symmetry that can be applied to unit moves. 
 enum MoveSymmetry : int
 {
 	// First 2 bits determines reflection (ex. knight) - APPLIED LAST, 
@@ -11,19 +12,22 @@ enum MoveSymmetry : int
 	// Fourth 90deg. rotation (ex. rook)
 	None =		0b0000, 
 	Rotate90 =	0b0001,
+	Rot90_45 =  0b0010,
 	Rotate45 =	0b0011,
 	FlipX =		0b0100,
-	FlipY =		0b1000,
-
+	FlipY =		0b1000
 };
 
 // Type of PieceDef with moves generated from unit moves 
 class UnitMovePiece : public PieceDef
 {
 private:
+	// 16x16 byte array storing moveset information.
 	byte moveset[256];
 
+
 public:
+	// If true, this piece can jump over other pieces.
 	bool canJump;
 
 	// Ctor
@@ -38,7 +42,8 @@ public:
 	// Initialize moveset data based on given unit moves with symmetry, etc.
 	void generateMoveset(std::vector<IVec2> unitMoves, int sym, bool repeat)
 	{
-		if (sym & 1) // 90 deg. rotate
+		// First fill apply symmetries on the unit moves.
+		if (sym & Rotate90) // 90 deg. rotate
 		{
 			int csz = unitMoves.size();
 			for (int i = 0; i < csz; i++) 
@@ -50,7 +55,7 @@ public:
 				unitMoves.push_back(IVec2(mv.y, -mv.x));
 				unitMoves.push_back(IVec2(-mv.x, -mv.y));
 				// 45 deg rotate
-				if (sym & 2) 
+				if (sym & Rot90_45) 
 				{	// Add 90deg. rotations of the 45deg. rotation
 					unitMoves.push_back(dv);
 					unitMoves.push_back(IVec2(-dv.y, dv.x));
@@ -59,17 +64,19 @@ public:
 				}
 			}
 		}
-		if (sym & 12) // Reflect
+		if (sym & (FlipX | FlipY)) // Reflect
 		{
 			int csz = unitMoves.size();
 			for (int i = 0; i < csz; i++)
 			{
 				IVec2 mv = unitMoves[i]; // Orig. move
-				if (sym & 4) { unitMoves.push_back(IVec2(-mv.x, mv.y)); } // X Flip
-				if (sym & 8) { unitMoves.push_back(IVec2(mv.x, -mv.y)); } // Y Flip
+				if (sym & FlipX) { unitMoves.push_back(IVec2(-mv.x, mv.y)); } // X Flip
+				if (sym & FlipY) { unitMoves.push_back(IVec2(mv.x, -mv.y)); } // Y Flip
 			}
 		}
 		// Fill moveset data from generated unit moves
+
+		// Set moveset to zero and will moveset table
 		std::fill_n(moveset, sizeof(moveset), 0);
 		for (int i = 0; i < unitMoves.size(); i++) 
 		{

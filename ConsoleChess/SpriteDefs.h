@@ -1,6 +1,8 @@
 #pragma once
 #include "Byte88.h"
 
+// Byte88 sprite definitions for the chess pieces
+
 static const Byte88 PawnSprite = Byte88(new byte[64]
 {
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
