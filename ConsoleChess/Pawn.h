@@ -2,13 +2,14 @@
 #include "PieceDef.h"
 #include "SpriteDefs.h"
 
+// Implements a chess pawn.
 class Pawn : public PieceDef
 {
 public:
 	// Default pawn ctor
 	Pawn(byte id, Byte88 sprite) : PieceDef(id, false, sprite) { }
 
-	// Check if potential move is pseudolegal, implemented by specific piece class
+	// Check if potential pawn move is pseudolegal
 	bool isValidMove(IVec2 start, IVec2 end, const BoardState &board) override
 	{
 		IVec2 delta = end - start;
@@ -39,6 +40,7 @@ public:
 	}
 
 	// Make move for simple pieces, overwrite if necessary (ex. en passant and castle)
+	// Return value decides if pawn is to be promoted or not
 	bool makeMove(IVec2 start, IVec2 end, BoardState& board) override
 	{
 		IVec2 delta = end - start;

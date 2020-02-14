@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <Windows.h>
 #include "IVec2.h"
 #include "Byte88.h"

@@ -43,6 +43,7 @@ public:
 		return false;
 	}
 
+	// Perform a king move. Return value represents promotion and is thus false.
 	bool makeMove(IVec2 start, IVec2 end, BoardState& board) override
 	{
 		// Get king piece and move delta

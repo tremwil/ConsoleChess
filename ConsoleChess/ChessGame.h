@@ -270,6 +270,7 @@ public:
 		return cnt;
 	}
 
+	// Updates the graphical interface.
 	void redraw()
 	{
 		// Draw selected / hover square
@@ -350,6 +351,7 @@ public:
 		window.invalidate();
 	}
 
+	// Begin a game from the initial state.
 	void beginGame()
 	{
 		// Reset board to starting board
